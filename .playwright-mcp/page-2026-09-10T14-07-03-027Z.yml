@@ -1,0 +1,79 @@
+- generic [ref=f6e1]:
+  - generic [ref=f6e2]:
+    - banner [ref=f6e3]:
+      - generic [ref=f6e4]:
+        - link [ref=f6e5] [cursor=pointer]:
+          - /url: /
+        - navigation [ref=f6e11]:
+          - link "Entrada" [ref=f6e12] [cursor=pointer]:
+            - /url: /
+          - link "Procesando" [ref=f6e13] [cursor=pointer]:
+            - /url: /procesando
+          - link "Resultados" [ref=f6e14] [cursor=pointer]:
+            - /url: /resultados
+        - generic [ref=f6e15]:
+          - 'generic "Cola: generaciones en vuelo / máximo" [ref=f6e16]':
+            - generic [ref=f6e17]: "2"
+            - generic [aria-hidden] [ref=f6e18]: /
+            - generic [ref=f6e19]: "3"
+          - link "Estilos" [ref=f6e20] [cursor=pointer]:
+            - /url: /estilos
+          - link "Capacidad" [ref=f6e21] [cursor=pointer]:
+            - /url: /capacidad
+    - main [ref=f6e22]:
+      - generic [ref=f6e23]:
+        - generic [ref=f6e24]:
+          - link "Volver a Resultados" [ref=f6e25] [cursor=pointer]:
+            - /url: /resultados
+          - generic [ref=f6e28]:
+            - generic [ref=f6e29]:
+              - heading "Tienda Mar" [level=1] [ref=f6e30]
+              - generic [ref=f6e31]: Revisión
+            - paragraph [ref=f6e32]: Agencia Sur · cccccccc-cccc-4ccc-8ccc-cccccccccccc
+        - generic [ref=f6e33]:
+          - tablist [ref=f6e34]:
+            - tab "Resumen" [ref=f6e35]
+            - tab "Entradas" [ref=f6e36]
+            - tab "Prompt" [ref=f6e37]
+            - tab "Kie" [ref=f6e38]
+            - tab "QR" [ref=f6e39]
+            - tab "Resultado" [active] [selected] [ref=f6e40]
+            - tab "JSON" [ref=f6e41]
+          - tabpanel "Resultado" [ref=f6e224]:
+            - generic [ref=f6e225]:
+              - generic [ref=f6e226]:
+                - heading "original" [level=2] [ref=f6e227]
+                - generic [ref=f6e228]:
+                  - generic [ref=f6e229]:
+                    - term [ref=f6e230]: hay
+                    - definition [ref=f6e231]: sí
+                  - generic [ref=f6e232]:
+                    - term [ref=f6e233]: es_original
+                    - definition [ref=f6e234]: sí
+                  - generic [ref=f6e235]:
+                    - term [ref=f6e236]: es_final
+                    - definition [ref=f6e237]: "no"
+                  - generic [ref=f6e238]:
+                    - term [ref=f6e239]: proxy
+                    - definition [ref=f6e240]: /api/imagen/cccccccc-cccc-4ccc-8ccc-cccccccccccc?variant=original
+                - button "Descargar original" [disabled]
+              - generic [ref=f6e241]:
+                - heading "final" [level=2] [ref=f6e242]
+                - generic [ref=f6e243]:
+                  - generic [ref=f6e244]:
+                    - term [ref=f6e245]: hay
+                    - definition [ref=f6e246]: sí
+                  - generic [ref=f6e247]:
+                    - term [ref=f6e248]: es_original
+                    - definition [ref=f6e249]: "no"
+                  - generic [ref=f6e250]:
+                    - term [ref=f6e251]: es_final
+                    - definition [ref=f6e252]: "no"
+                  - generic [ref=f6e253]:
+                    - term [ref=f6e254]: proxy
+                    - definition [ref=f6e255]: /api/imagen/cccccccc-cccc-4ccc-8ccc-cccccccccccc
+                - button "Descargar final" [disabled]
+            - generic [ref=f6e256]:
+              - button "Exportar JSON" [ref=f6e257]
+              - button "Regenerar" [ref=f6e258]
+  - alert [ref=f6e127]

@@ -1,4 +1,12 @@
 import { randomUUID } from "crypto";
+import { getKieModel, isKieReal } from "./config";
+import {
+  callbackUrlKie,
+  consultarTareaKie,
+  crearTareaKie,
+  isoFromKieTime,
+  puedeLlamarKieConUrls,
+} from "./kie";
 import {
   ESTILO_QR_DEFAULT,
   SEED_STORE,
@@ -185,6 +193,8 @@ export function getCapacidadCompleta(): CapacidadesCompletas {
   const base = getCapacidades();
   return {
     ...base,
+    kie_modo: isKieReal() ? "real" : "mock",
+    modelo_kie: getKieModel(),
     limites: {
       negocio_chars: 60,
       agencia_chars: 60,
@@ -314,23 +324,213 @@ function enVuelo(store: AppStore): Generacion[] {
   return store.generaciones.filter((g) => g.estado === "generando");
 }
 
-function asignarLease(g: Generacion): void {
+function asignarLeaseMock(g: Generacion): void {
   const now = Date.now();
   g.fencing.lease_id = `lease_${g.slug_negocio}_${g.intentos_inicio}`;
   g.fencing.lease_hasta = new Date(now + 10 * 60 * 1000).toISOString();
+  g.kie.model = getKieModel();
   g.kie.reserva_inicio = new Date(now).toISOString();
   g.kie.task_id = `kie_task_${g.slug_negocio}_${String(g.intentos_inicio).padStart(2, "0")}`;
-  g.kie.callBackUrl = "https://mock.local/api/kie/callback";
+  g.kie.callBackUrl = callbackUrlKie() ?? "https://mock.local/api/aviso-kie";
   g.kie.createTime = new Date(now).toISOString();
   g.kie.completeTime = null;
   g.kie.costTime_segundos_backup = null;
   g.kie.input_enviado = {
     model: g.kie.model,
-    aspect_ratio: g.aspect_ratio,
+    prompt: g.prompt_enviado,
+    aspect_ratio: g.aspect_ratio === "circulo" ? "1:1" : g.aspect_ratio,
     resolution: g.resolucion,
     mode: g.qr_modo,
     input_urls: g.input_urls,
+    kie_modo: "mock",
   };
+}
+
+function prepararInicioGeneracion(g: Generacion): void {
+  g.estado = "generando";
+  g.iniciado_en = new Date().toISOString();
+  g.intentos_inicio += 1;
+  const fases = fasesPara(g.qr_modo);
+  g.fase_qr = fases[0] ?? "esperando_resultado";
+  if (!g.prompt_enviado) {
+    g.prompt_enviado = [
+      `Pegatina NFC reseñas para ${g.nombre_negocio}.`,
+      `Agencia: ${g.nombre_agencia}.`,
+      `Formato ${g.aspect_ratio} · ${g.resolucion}.`,
+      g.estilo_texto ? `Notas: ${g.estilo_texto}` : "",
+      g.qr_modo === "ninguno"
+        ? "Incluye QR ilustrativo (no funcional)."
+        : `Integra QR funcional apuntando a ${g.url_qr}.`,
+      "Icono NFC visible. Jerarquía clara, CTA de reseña, crédito de agencia.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (g.qr_modo === "artistico_ia") {
+    g.qr_artistico_intento = g.qr_artistico_intento ?? 1;
+    g.integracion_intento = g.integracion_intento ?? 0;
+  }
+  if (g.qr_modo !== "ninguno" && !g.inputs.qr_funcional.hay) {
+    g.inputs.qr_funcional = {
+      hay: true,
+      origen: "generado",
+      mime: "image/png",
+      proxy: `/api/entrada/${g.id}/qr-funcional`,
+      nota: "QR funcional base",
+    };
+  }
+  g.familia_composicion = familiaPara(g);
+  g.input_urls = inputUrlsPara(g);
+  g.fencing.lease_id = `lease_${g.slug_negocio}_${g.intentos_inicio}`;
+  g.fencing.lease_hasta = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  g.kie.model = getKieModel();
+  g.kie.reserva_inicio = new Date().toISOString();
+}
+
+/** Arranca createTask real; si falla o no hay config usable, cae a mock. */
+async function iniciarKieReal(g: Generacion): Promise<void> {
+  const check = puedeLlamarKieConUrls(g.input_urls);
+  if (!check.ok) {
+    g.error_msg = check.reason ?? "Kie no disponible; usando mock";
+    asignarLeaseMock(g);
+    return;
+  }
+
+  const cb = callbackUrlKie();
+  try {
+    const created = await crearTareaKie({
+      prompt: g.prompt_enviado || `Pegatina ${g.nombre_negocio}`,
+      input_urls: g.input_urls,
+      aspect_ratio: g.aspect_ratio,
+      resolution: g.resolucion,
+      callBackUrl: cb,
+    });
+    g.kie.task_id = created.taskId;
+    g.kie.callBackUrl = cb;
+    g.kie.createTime = new Date().toISOString();
+    g.kie.completeTime = null;
+    g.kie.costTime_segundos_backup = null;
+    g.kie.input_enviado = {
+      model: getKieModel(),
+      prompt: g.prompt_enviado,
+      aspect_ratio: g.aspect_ratio === "circulo" ? "1:1" : g.aspect_ratio,
+      resolution: g.resolucion,
+      input_urls: check.urls,
+      callBackUrl: cb,
+      kie_modo: "real",
+      createTask: created.raw,
+    };
+    g.fase_qr = "esperando_resultado";
+    g.error_msg = null;
+  } catch (error) {
+    g.estado = "error";
+    g.fase_qr = null;
+    g.error_msg =
+      error instanceof Error
+        ? `Kie createTask: ${error.message}`
+        : "Kie createTask falló";
+  }
+}
+
+function aplicarResultadoKieExitoso(
+  g: Generacion,
+  info: {
+    resultUrls: string[];
+    createTime: number | string | null;
+    completeTime: number | string | null;
+    costTime: number | null;
+    raw: unknown;
+  },
+): void {
+  const createIso = isoFromKieTime(info.createTime);
+  const completeIso = isoFromKieTime(info.completeTime);
+  if (createIso) g.kie.createTime = createIso;
+  if (completeIso) g.kie.completeTime = completeIso;
+
+  if (
+    info.createTime != null &&
+    info.completeTime != null &&
+    typeof info.createTime === "number" &&
+    typeof info.completeTime === "number"
+  ) {
+    const a = info.createTime > 1e12 ? info.createTime : info.createTime * 1000;
+    const b =
+      info.completeTime > 1e12 ? info.completeTime : info.completeTime * 1000;
+    g.coste_ms = Math.max(0, b - a);
+  } else if (info.costTime != null) {
+    // costTime backup = segundos
+    g.coste_ms = Math.round(info.costTime * 1000);
+    g.kie.costTime_segundos_backup = info.costTime;
+  }
+
+  const resultUrl = info.resultUrls[0] ?? null;
+  g.kie.input_enviado = {
+    ...(g.kie.input_enviado && typeof g.kie.input_enviado === "object"
+      ? g.kie.input_enviado
+      : {}),
+    resultUrls: info.resultUrls,
+    recordInfo: info.raw,
+  };
+
+  g.resultados = {
+    original: {
+      hay: Boolean(resultUrl),
+      es_original: true,
+      es_final: false,
+      proxy: resultUrl,
+    },
+    final: {
+      hay: Boolean(resultUrl),
+      es_original: false,
+      es_final: g.qr_modo === "ninguno",
+      proxy: resultUrl,
+    },
+  };
+  g.tiene_resultado = Boolean(resultUrl);
+
+  // Tras Kie: sin QR funcional → listo; con QR → seguir fases mock de corrección
+  if (g.qr_modo === "ninguno") {
+    g.estado = "listo";
+    g.fase_qr = null;
+    return;
+  }
+
+  const fases = fasesPara(g.qr_modo);
+  // Saltar esperando_resultado; entrar en pipeline QR local (mock hasta sharp real)
+  const next =
+    fases.find((f) => f && f !== "esperando_resultado") ??
+    fases[1] ??
+    "analizando";
+  g.fase_qr = next;
+  g.estado = "generando";
+}
+
+export async function aplicarAvisoKie(taskId: string): Promise<GeneracionDto | null> {
+  const store = getStore();
+  const g = store.generaciones.find((item) => item.kie.task_id === taskId);
+  if (!g) return null;
+  if (!isKieReal()) {
+    // En mock el taskId es sintético; no consultar API
+    return toDto(g);
+  }
+  try {
+    const info = await consultarTareaKie(taskId);
+    if (info.state === "success") {
+      aplicarResultadoKieExitoso(g, info);
+    } else if (info.state === "fail") {
+      g.estado = "error";
+      g.fase_qr = null;
+      g.error_msg = info.failMsg || info.failCode || "Kie task fail";
+      g.kie.completeTime = isoFromKieTime(info.completeTime) ?? new Date().toISOString();
+    }
+    // waiting/queuing/generating → no-op; vigilancia reconsulta
+  } catch (error) {
+    g.error_msg =
+      error instanceof Error
+        ? `Kie recordInfo: ${error.message}`
+        : "Error consultando Kie";
+  }
+  return toDto(g);
 }
 
 function reclamarCola(store: AppStore): void {
@@ -343,35 +543,29 @@ function reclamarCola(store: AppStore): void {
     .slice(0, huecos);
 
   for (const g of pendientes) {
-    g.estado = "generando";
-    g.iniciado_en = new Date().toISOString();
-    g.intentos_inicio += 1;
-    const fases = fasesPara(g.qr_modo);
-    g.fase_qr = fases[0] ?? "esperando_resultado";
-    if (!g.prompt_enviado) {
-      g.prompt_enviado = `PROMPT_MOCK_${g.slug_negocio}_${g.aspect_ratio}`;
+    prepararInicioGeneracion(g);
+    if (isKieReal()) {
+      // No avanzar fases locales hasta tener task; fire-and-forget
+      void iniciarKieReal(g);
+    } else {
+      asignarLeaseMock(g);
     }
-    if (g.qr_modo === "artistico_ia") {
-      g.qr_artistico_intento = 1;
-      g.integracion_intento = 0;
-    }
-    if (g.qr_modo !== "ninguno" && !g.inputs.qr_funcional.hay) {
-      g.inputs.qr_funcional = {
-        hay: true,
-        origen: "generado",
-        mime: "image/png",
-        proxy: `/api/entrada/${g.id}/qr-funcional`,
-        nota: "QR funcional base",
-      };
-    }
-    g.familia_composicion = familiaPara(g);
-    g.input_urls = inputUrlsPara(g);
-    asignarLease(g);
   }
 }
 
 function avanzarGeneracion(g: Generacion): void {
   if (g.estado !== "generando") return;
+
+  // Con Kie real: no avanzar mientras esperamos resultado de imagen
+  if (
+    isKieReal() &&
+    g.kie.task_id &&
+    !g.kie.task_id.startsWith("kie_task_") &&
+    g.fase_qr === "esperando_resultado" &&
+    !g.tiene_resultado
+  ) {
+    return;
+  }
 
   const fases = fasesPara(g.qr_modo);
   const idx = fases.findIndex((f) => f === g.fase_qr);
@@ -392,7 +586,10 @@ function avanzarGeneracion(g: Generacion): void {
 
   if (g.fase_qr === "corrigiendo_qr_final") {
     g.fencing.reintentos_qr += 1;
-    const step = DEGRADACION_STEPS[Math.min(g.fencing.reintentos_qr - 1, DEGRADACION_STEPS.length - 1)];
+    const step =
+      DEGRADACION_STEPS[
+        Math.min(g.fencing.reintentos_qr - 1, DEGRADACION_STEPS.length - 1)
+      ];
     if (step && !g.qr_ajustes_aplicados.some((a) => a.ajuste === step.ajuste)) {
       g.qr_ajustes_aplicados.push({
         ajuste: step.ajuste,
@@ -409,19 +606,12 @@ function avanzarGeneracion(g: Generacion): void {
         ARTISTICO_MAX_INTEGRACION,
       );
     }
-    if (
-      g.qr_modo === "artistico_ia" &&
-      g.fase_qr === "generando_qr_artistico" &&
-      (g.qr_artistico_intento ?? 0) < ARTISTICO_MAX_QR
-    ) {
-      // keep current attempt; bump only on explicit retry paths
-    }
     return;
   }
 
-  // Última fase: decidir resultado mock
+  // Última fase: decidir resultado mock (post-Kie o mock puro)
   const doneAt = new Date().toISOString();
-  g.kie.completeTime = doneAt;
+  if (!g.kie.completeTime) g.kie.completeTime = doneAt;
 
   if (g.nombre_negocio.toLowerCase().includes("falla")) {
     g.estado = "error";
@@ -434,15 +624,49 @@ function avanzarGeneracion(g: Generacion): void {
     g.estado = "revision_necesaria";
     g.error_msg = "No se pudo garantizar la URL exacta del QR";
     g.tiene_resultado = true;
-    g.coste_ms = 32000 + Math.floor(Math.random() * 8000);
+    g.coste_ms = g.coste_ms ?? 32000 + Math.floor(Math.random() * 8000);
     g.kie.costTime_segundos_backup = Math.round((g.coste_ms ?? 0) / 1000);
     const ajustes: QrAjusteAplicado[] = DEGRADACION_STEPS.map((s, i) => ({
       ajuste: s.ajuste,
-      resultado: i === DEGRADACION_STEPS.length - 1 ? "fallo_final" : "url_incorrecta",
+      resultado:
+        i === DEGRADACION_STEPS.length - 1 ? "fallo_final" : "url_incorrecta",
     }));
     g.qr_ajustes_aplicados = ajustes;
     g.fencing.reintentos_qr = Math.max(g.fencing.reintentos_qr, ajustes.length);
     g.qr_zona_final = g.qr_zona_final ?? mockZona(g.id);
+    if (!g.resultados.final.hay) {
+      g.resultados = {
+        original: {
+          hay: true,
+          es_original: true,
+          es_final: false,
+          proxy: `/api/imagen/${g.id}?variant=original`,
+        },
+        final: {
+          hay: true,
+          es_original: false,
+          es_final: false,
+          proxy: `/api/imagen/${g.id}`,
+        },
+      };
+    }
+    return;
+  }
+
+  g.estado = "listo";
+  g.fase_qr = null;
+  g.tiene_resultado = true;
+  g.coste_ms = g.coste_ms ?? 28000 + Math.floor(Math.random() * 12000);
+  g.kie.costTime_segundos_backup = Math.round((g.coste_ms ?? 0) / 1000);
+  if (g.qr_modo === "inmutable" || g.qr_modo === "artistico_ia") {
+    g.qr_ajustes_aplicados = g.qr_ajustes_aplicados.length
+      ? g.qr_ajustes_aplicados.map((a) =>
+          a.resultado === "reintento" ? { ...a, resultado: "ok" } : a,
+        )
+      : [{ ajuste: "base", resultado: "ok" }];
+    g.qr_zona_final = g.qr_zona_final ?? mockZona(g.id);
+  }
+  if (!g.resultados.final.hay) {
     g.resultados = {
       original: {
         hay: true,
@@ -453,47 +677,55 @@ function avanzarGeneracion(g: Generacion): void {
       final: {
         hay: true,
         es_original: false,
-        es_final: false,
+        es_final: true,
         proxy: `/api/imagen/${g.id}`,
       },
     };
-    return;
+  } else {
+    g.resultados.final.es_final = true;
   }
+}
 
-  g.estado = "listo";
-  g.fase_qr = null;
-  g.tiene_resultado = true;
-  g.coste_ms = 28000 + Math.floor(Math.random() * 12000);
-  g.kie.costTime_segundos_backup = Math.round((g.coste_ms ?? 0) / 1000);
-  if (g.qr_modo === "inmutable" || g.qr_modo === "artistico_ia") {
-    g.qr_ajustes_aplicados = g.qr_ajustes_aplicados.length
-      ? g.qr_ajustes_aplicados.map((a) =>
-          a.resultado === "reintento" ? { ...a, resultado: "ok" } : a,
-        )
-      : [{ ajuste: "base", resultado: "ok" }];
-    g.qr_zona_final = g.qr_zona_final ?? mockZona(g.id);
+async function consultarKiePendientes(store: AppStore): Promise<void> {
+  if (!isKieReal()) return;
+  for (const g of enVuelo(store)) {
+    if (
+      !g.kie.task_id ||
+      g.kie.task_id.startsWith("kie_task_") ||
+      g.fase_qr !== "esperando_resultado" ||
+      g.tiene_resultado
+    ) {
+      continue;
+    }
+    try {
+      const info = await consultarTareaKie(g.kie.task_id);
+      if (info.state === "success") {
+        aplicarResultadoKieExitoso(g, info);
+      } else if (info.state === "fail") {
+        g.estado = "error";
+        g.fase_qr = null;
+        g.error_msg = info.failMsg || info.failCode || "Kie task fail";
+        g.kie.completeTime =
+          isoFromKieTime(info.completeTime) ?? new Date().toISOString();
+      }
+    } catch (error) {
+      // No tumbar la generación por un poll fallido puntual
+      g.error_msg =
+        error instanceof Error
+          ? `Kie poll: ${error.message}`
+          : "Kie poll error";
+    }
   }
-  g.resultados = {
-    original: {
-      hay: true,
-      es_original: true,
-      es_final: false,
-      proxy: `/api/imagen/${g.id}?variant=original`,
-    },
-    final: {
-      hay: true,
-      es_original: false,
-      es_final: true,
-      proxy: `/api/imagen/${g.id}`,
-    },
-  };
 }
 
 export function vigilar(): AppStore {
   const store = getStore();
   const now = Date.now();
   const last = globalThis.__pegatinasLastTick ?? now;
-  // Avanzar como máximo una fase cada ~2.5s por tick de vigilancia
+
+  // Fire-and-forget poll Kie (no bloquea respuesta HTTP)
+  void consultarKiePendientes(store);
+
   if (now - last >= 2500) {
     for (const g of enVuelo(store)) {
       avanzarGeneracion(g);

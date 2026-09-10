@@ -1,0 +1,127 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - banner [ref=f7e3]:
+      - generic [ref=f7e4]:
+        - link [ref=f7e5] [cursor=pointer]:
+          - /url: /
+        - navigation [ref=f7e11]:
+          - link "Entrada" [ref=f7e12] [cursor=pointer]:
+            - /url: /
+          - link "Procesando" [ref=f7e13] [cursor=pointer]:
+            - /url: /procesando
+          - link "Resultados" [ref=f7e14] [cursor=pointer]:
+            - /url: /resultados
+        - generic [ref=f7e15]:
+          - 'generic "Cola: generaciones en vuelo / máximo" [ref=f7e16]':
+            - generic [ref=f7e17]: "2"
+            - generic [aria-hidden] [ref=f7e18]: /
+            - generic [ref=f7e19]: "3"
+          - link "Estilos" [ref=f7e20] [cursor=pointer]:
+            - /url: /estilos
+          - link "Capacidad" [ref=f7e21] [cursor=pointer]:
+            - /url: /capacidad
+    - main [ref=f7e22]:
+      - generic [ref=f7e23]:
+        - generic [ref=f7e24]:
+          - link "Volver a Resultados" [ref=f7e25] [cursor=pointer]:
+            - /url: /resultados
+          - generic [ref=f7e28]:
+            - generic [ref=f7e29]:
+              - heading "Tienda Mar" [level=1] [ref=f7e30]
+              - generic [ref=f7e31]: Revisión
+            - paragraph [ref=f7e32]: Agencia Sur · cccccccc-cccc-4ccc-8ccc-cccccccccccc
+        - generic [ref=f7e33]:
+          - tablist [ref=f7e34]:
+            - tab "Resumen" [selected] [ref=f7e35]
+            - tab "Entradas" [ref=f7e36]
+            - tab "Prompt" [ref=f7e37]
+            - tab "Kie" [ref=f7e38]
+            - tab "QR" [ref=f7e39]
+            - tab "Resultado" [ref=f7e40]
+            - tab "JSON" [ref=f7e41]
+          - tabpanel "Resumen" [ref=f7e42]:
+            - generic [ref=f7e43]:
+              - heading "Identidad" [level=2] [ref=f7e44]
+              - generic [ref=f7e45]:
+                - generic [ref=f7e46]:
+                  - term [ref=f7e47]: negocio
+                  - definition [ref=f7e48]: Tienda Mar
+                - generic [ref=f7e49]:
+                  - term [ref=f7e50]: agencia
+                  - definition [ref=f7e51]: Agencia Sur
+                - generic [ref=f7e52]:
+                  - term [ref=f7e53]: slug
+                  - definition [ref=f7e54]: tienda-mar
+                - generic [ref=f7e55]:
+                  - term [ref=f7e56]: aspect_ratio
+                  - definition [ref=f7e57]: circulo
+                - generic [ref=f7e58]:
+                  - term [ref=f7e59]: resolucion
+                  - definition [ref=f7e60]: 1K
+                - generic [ref=f7e61]:
+                  - term [ref=f7e62]: qr_modo
+                  - definition [ref=f7e63]: QR inmutable
+                - generic [ref=f7e64]:
+                  - term [ref=f7e65]: url_qr
+                  - definition [ref=f7e66]: https://example.com/r/tienda-mar
+                - generic [ref=f7e67]:
+                  - term [ref=f7e68]: estilo_texto
+                  - definition [ref=f7e69]: Minimal, mucho blanco
+            - generic [ref=f7e70]:
+              - heading "Estado y fechas" [level=2] [ref=f7e71]
+              - generic [ref=f7e72]:
+                - generic [ref=f7e73]:
+                  - term [ref=f7e74]: estado
+                  - definition [ref=f7e75]:
+                    - generic [ref=f7e76]: Revisión
+                - generic [ref=f7e77]:
+                  - term [ref=f7e78]: fase_qr
+                  - definition [ref=f7e79]: Validando QR final
+                - generic [ref=f7e80]:
+                  - term [ref=f7e81]: intentos_inicio
+                  - definition [ref=f7e82]: "1"
+                - generic [ref=f7e83]:
+                  - term [ref=f7e84]: creado_en
+                  - definition [ref=f7e85]: 10/9/26, 11:30
+                - generic [ref=f7e86]:
+                  - term [ref=f7e87]: iniciado_en
+                  - definition [ref=f7e88]: 10/9/26, 11:30
+                - generic [ref=f7e89]:
+                  - term [ref=f7e90]: coste
+                  - definition [ref=f7e91]: 36.0s
+                - generic [ref=f7e92]:
+                  - term [ref=f7e93]: error_msg
+                  - definition [ref=f7e94]: No se pudo garantizar la URL exacta del QR tras degradación
+            - generic [ref=f7e95]:
+              - heading "Origen" [level=2] [ref=f7e96]
+              - generic [ref=f7e97]:
+                - generic [ref=f7e98]:
+                  - term [ref=f7e99]: origen
+                  - definition [ref=f7e100]: Manual
+                - generic [ref=f7e101]:
+                  - term [ref=f7e102]: regenerado_desde
+                  - definition [ref=f7e103]: —
+                - generic [ref=f7e104]:
+                  - term [ref=f7e105]: archivo_origen
+                  - definition [ref=f7e106]: —
+            - generic [ref=f7e107]:
+              - heading "Fencing" [level=2] [ref=f7e108]
+              - generic [ref=f7e109]:
+                - generic [ref=f7e110]:
+                  - term [ref=f7e111]: lease_id
+                  - definition [ref=f7e112]: lease_tienda_mar_done
+                - generic [ref=f7e113]:
+                  - term [ref=f7e114]: lease_hasta
+                  - definition [ref=f7e115]: 10/9/26, 11:35
+                - generic [ref=f7e116]:
+                  - term [ref=f7e117]: reintentos_qr
+                  - definition [ref=f7e118]: "6"
+            - generic [ref=f7e119]:
+              - heading "Artefactos" [level=2] [ref=f7e120]
+              - generic [ref=f7e121]:
+                - generic [ref=f7e122]: Logo
+                - generic [ref=f7e123]: Sin estilo
+                - generic [ref=f7e124]: Sin logo qr
+                - generic [ref=f7e125]: Resultado
+                - generic [ref=f7e126]: Sin qr artístico
+  - alert [ref=f7e127]

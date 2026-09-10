@@ -1,0 +1,249 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - banner [ref=f5e3]:
+      - generic [ref=f5e4]:
+        - link [ref=f5e5] [cursor=pointer]:
+          - /url: /
+        - navigation [ref=f5e11]:
+          - link "Entrada" [ref=f5e12] [cursor=pointer]:
+            - /url: /
+          - link "Procesando" [ref=f5e13] [cursor=pointer]:
+            - /url: /procesando
+          - link "Resultados" [ref=f5e14] [cursor=pointer]:
+            - /url: /resultados
+        - generic [ref=f5e15]:
+          - 'generic "Cola: generaciones en vuelo / máximo" [ref=f5e16]':
+            - generic [ref=f5e17]: "2"
+            - generic [aria-hidden] [ref=f5e18]: /
+            - generic [ref=f5e19]: "3"
+          - link "Estilos" [ref=f5e20] [cursor=pointer]:
+            - /url: /estilos
+          - link "Capacidad" [ref=f5e21] [cursor=pointer]:
+            - /url: /capacidad
+    - main [ref=f5e22]:
+      - generic [ref=f5e23]:
+        - generic [ref=f5e24]:
+          - heading "Capacidad" [level=1] [ref=f5e25]
+          - paragraph [ref=f5e26]: Límites del sistema, fases QR, degradación y escalas.
+        - generic [ref=f5e27]:
+          - heading "Sistema" [level=2] [ref=f5e28]
+          - generic [ref=f5e29]:
+            - generic [ref=f5e30]:
+              - term [ref=f5e31]: modelo_kie
+              - definition [ref=f5e32]: gpt-image-2-image-to-image
+            - generic [ref=f5e33]:
+              - term [ref=f5e34]: cola_max_en_vuelo
+              - definition [ref=f5e35]:
+                - generic [ref=f5e36]:
+                  - text: "3"
+                  - generic [ref=f5e37]: "(en vuelo ahora: 2)"
+            - generic [ref=f5e38]:
+              - term [ref=f5e39]: formatos
+              - definition [ref=f5e40]:
+                - generic [ref=f5e41]:
+                  - generic [ref=f5e42]: circulo
+                  - generic [ref=f5e43]: auto
+                  - generic [ref=f5e44]: 9:21
+                  - generic [ref=f5e45]: 1:3
+                  - generic [ref=f5e46]: 1:2
+                  - generic [ref=f5e47]: 9:16
+                  - generic [ref=f5e48]: 2:3
+                  - generic [ref=f5e49]: 3:4
+                  - generic [ref=f5e50]: 4:5
+                  - generic [ref=f5e51]: 1:1
+                  - generic [ref=f5e52]: 5:4
+                  - generic [ref=f5e53]: 4:3
+                  - generic [ref=f5e54]: 3:2
+                  - generic [ref=f5e55]: 16:9
+                  - generic [ref=f5e56]: 2:1
+                  - generic [ref=f5e57]: 21:9
+                  - generic [ref=f5e58]: 3:1
+            - generic [ref=f5e59]:
+              - term [ref=f5e60]: resoluciones
+              - definition [ref=f5e61]:
+                - generic [ref=f5e62]:
+                  - generic [ref=f5e63]: 1K
+                  - generic [ref=f5e64]: 2K
+            - generic [ref=f5e65]:
+              - term [ref=f5e66]: qr_modos
+              - definition [ref=f5e67]:
+                - generic [ref=f5e68]:
+                  - generic [ref=f5e69]: Sin QR funcional
+                  - generic [ref=f5e70]: QR inmutable
+                  - generic [ref=f5e71]: QR artístico IA
+        - generic [ref=f5e72]:
+          - heading "Límites" [level=2] [ref=f5e73]
+          - generic [ref=f5e74]:
+            - generic [ref=f5e75]:
+              - term [ref=f5e76]: negocio_chars
+              - definition [ref=f5e77]: "60"
+            - generic [ref=f5e78]:
+              - term [ref=f5e79]: agencia_chars
+              - definition [ref=f5e80]: "60"
+            - generic [ref=f5e81]:
+              - term [ref=f5e82]: estilo_texto_chars
+              - definition [ref=f5e83]: "600"
+            - generic [ref=f5e84]:
+              - term [ref=f5e85]: prompt_chars
+              - definition [ref=f5e86]: "8000"
+            - generic [ref=f5e87]:
+              - term [ref=f5e88]: cola_max_en_vuelo
+              - definition [ref=f5e89]: "3"
+        - generic [ref=f5e90]:
+          - heading "Fases QR" [level=2] [ref=f5e91]
+          - table [ref=f5e94]:
+            - caption [ref=f5e95]: Catálogo de fases por modo
+            - rowgroup [ref=f5e96]:
+              - row [ref=f5e97]:
+                - columnheader "id" [ref=f5e98]
+                - columnheader "etiqueta" [ref=f5e99]
+                - columnheader "modos" [ref=f5e100]
+            - rowgroup [ref=f5e101]:
+              - row [ref=f5e102]:
+                - cell "esperando_resultado" [ref=f5e103]
+                - cell "Esperando resultado" [ref=f5e104]
+                - cell "ninguno inmutable" [ref=f5e105]:
+                  - generic [ref=f5e106]:
+                    - generic [ref=f5e107]: ninguno
+                    - generic [ref=f5e108]: inmutable
+              - row [ref=f5e109]:
+                - cell "validando_resultado" [ref=f5e110]
+                - cell "Validando resultado" [ref=f5e111]
+                - cell "ninguno artistico_ia" [ref=f5e112]:
+                  - generic [ref=f5e113]:
+                    - generic [ref=f5e114]: ninguno
+                    - generic [ref=f5e115]: artistico_ia
+              - row [ref=f5e116]:
+                - cell "analizando" [ref=f5e117]
+                - cell "Analizando QR" [ref=f5e118]
+                - cell "inmutable" [ref=f5e119]
+              - row [ref=f5e122]:
+                - cell "insertando" [ref=f5e123]
+                - cell "Insertando QR" [ref=f5e124]
+                - cell "inmutable" [ref=f5e125]
+              - row [ref=f5e128]:
+                - cell "validando" [ref=f5e129]
+                - cell "Validando" [ref=f5e130]
+                - cell "inmutable" [ref=f5e131]
+              - row [ref=f5e134]:
+                - cell "localizando_qr_final" [ref=f5e135]
+                - cell "Localizando QR final" [ref=f5e136]
+                - cell "inmutable artistico_ia" [ref=f5e137]:
+                  - generic [ref=f5e138]:
+                    - generic [ref=f5e139]: inmutable
+                    - generic [ref=f5e140]: artistico_ia
+              - row [ref=f5e141]:
+                - cell "corrigiendo_qr_final" [ref=f5e142]
+                - cell "Corrigiendo QR final" [ref=f5e143]
+                - cell "inmutable artistico_ia" [ref=f5e144]:
+                  - generic [ref=f5e145]:
+                    - generic [ref=f5e146]: inmutable
+                    - generic [ref=f5e147]: artistico_ia
+              - row [ref=f5e148]:
+                - cell "validando_qr_final" [ref=f5e149]
+                - cell "Validando QR final" [ref=f5e150]
+                - cell "inmutable artistico_ia" [ref=f5e151]:
+                  - generic [ref=f5e152]:
+                    - generic [ref=f5e153]: inmutable
+                    - generic [ref=f5e154]: artistico_ia
+              - row [ref=f5e155]:
+                - cell "generando_qr_artistico" [ref=f5e156]
+                - cell "Generando QR artístico" [ref=f5e157]
+                - cell "artistico_ia" [ref=f5e158]
+              - row [ref=f5e161]:
+                - cell "creando_qr_artistico" [ref=f5e162]
+                - cell "Creando QR artístico" [ref=f5e163]
+                - cell "artistico_ia" [ref=f5e164]
+              - row [ref=f5e167]:
+                - cell "validando_qr_artistico" [ref=f5e168]
+                - cell "Validando QR artístico" [ref=f5e169]
+                - cell "artistico_ia" [ref=f5e170]
+              - row [ref=f5e173]:
+                - cell "integrando_diseno" [ref=f5e174]
+                - cell "Integrando diseño" [ref=f5e175]
+                - cell "artistico_ia" [ref=f5e176]
+        - generic [ref=f5e179]:
+          - heading "Degradación" [level=2] [ref=f5e180]
+          - table [ref=f5e183]:
+            - caption [ref=f5e184]: Pasos de degradación del estilo QR
+            - rowgroup [ref=f5e185]:
+              - row [ref=f5e186]:
+                - columnheader "orden" [ref=f5e187]
+                - columnheader "ajuste" [ref=f5e188]
+                - columnheader "descripción" [ref=f5e189]
+            - rowgroup [ref=f5e190]:
+              - row [ref=f5e191]:
+                - cell "1" [ref=f5e192]
+                - cell "Base base" [ref=f5e193]:
+                  - text: Base
+                  - generic [ref=f5e194]: base
+                - cell "Estilo QR sin cambios" [ref=f5e195]
+              - row [ref=f5e196]:
+                - cell "2" [ref=f5e197]
+                - cell "Sin logo central sin_logo_central" [ref=f5e198]:
+                  - text: Sin logo central
+                  - generic [ref=f5e199]: sin_logo_central
+                - cell "Quita logo del centro del QR" [ref=f5e200]
+              - row [ref=f5e201]:
+                - cell "3" [ref=f5e202]
+                - cell "Sin degradados sin_degradados" [ref=f5e203]:
+                  - text: Sin degradados
+                  - generic [ref=f5e204]: sin_degradados
+                - cell "Colores planos en módulos y ojos" [ref=f5e205]
+              - row [ref=f5e206]:
+                - cell "4" [ref=f5e207]
+                - cell "Módulos redondeados modulos_redondeados" [ref=f5e208]:
+                  - text: Módulos redondeados
+                  - generic [ref=f5e209]: modulos_redondeados
+                - cell "Fuerza módulos redondeados" [ref=f5e210]
+              - row [ref=f5e211]:
+                - cell "5" [ref=f5e212]
+                - cell "Ojos normalizados ojos_normalizados" [ref=f5e213]:
+                  - text: Ojos normalizados
+                  - generic [ref=f5e214]: ojos_normalizados
+                - cell "Ojos a forma cuadrada estándar" [ref=f5e215]
+              - row [ref=f5e216]:
+                - cell "6" [ref=f5e217]
+                - cell "Módulos cuadrados modulos_cuadrados" [ref=f5e218]:
+                  - text: Módulos cuadrados
+                  - generic [ref=f5e219]: modulos_cuadrados
+                - 'cell "Máxima legibilidad: módulos cuadrados" [ref=f5e220]'
+        - generic [ref=f5e221]:
+          - heading "Escalas" [level=2] [ref=f5e222]
+          - table [ref=f5e225]:
+            - caption [ref=f5e226]: Escalas de zona QR
+            - rowgroup [ref=f5e227]:
+              - row [ref=f5e228]:
+                - columnheader "valor" [ref=f5e229]
+                - columnheader "uso" [ref=f5e230]
+            - rowgroup [ref=f5e231]:
+              - row [ref=f5e232]:
+                - cell "0.75" [ref=f5e233]
+                - cell "Corrección agresiva de zona" [ref=f5e234]
+              - row [ref=f5e235]:
+                - cell "0.85" [ref=f5e236]
+                - cell "Reintento tras fallo de lectura" [ref=f5e237]
+              - row [ref=f5e238]:
+                - cell "0.92" [ref=f5e239]
+                - cell "Ajuste fino habitual" [ref=f5e240]
+              - row [ref=f5e241]:
+                - cell "1" [ref=f5e242]
+                - cell "Escala nominal" [ref=f5e243]
+              - row [ref=f5e244]:
+                - cell "1.08" [ref=f5e245]
+                - cell "Ampliar zona si margen lo permite" [ref=f5e246]
+        - generic [ref=f5e247]:
+          - heading "Artístico · límites 3+3" [level=2] [ref=f5e248]
+          - generic [ref=f5e249]:
+            - generic [ref=f5e250]:
+              - term [ref=f5e251]: max_intentos_qr
+              - definition [ref=f5e252]: "3"
+            - generic [ref=f5e253]:
+              - term [ref=f5e254]: max_intentos_integracion
+              - definition [ref=f5e255]: "3"
+        - generic [ref=f5e256]:
+          - heading "Futuro · prompt_sets" [level=2] [ref=f5e257]
+          - generic [ref=f5e258]:
+            - paragraph [ref=f5e259]: No implementado
+            - paragraph [ref=f5e260]: El catálogo de prompt_sets aún no forma parte del mock.
+  - alert [ref=f5e261]

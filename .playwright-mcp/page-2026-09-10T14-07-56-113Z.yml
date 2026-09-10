@@ -1,0 +1,130 @@
+- generic [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - banner [ref=f7e3]:
+      - generic [ref=f7e4]:
+        - link [ref=f7e5] [cursor=pointer]:
+          - /url: /
+        - navigation [ref=f7e11]:
+          - link "Entrada" [ref=f7e12] [cursor=pointer]:
+            - /url: /
+          - link "Procesando" [ref=f7e13] [cursor=pointer]:
+            - /url: /procesando
+          - link "Resultados" [ref=f7e14] [cursor=pointer]:
+            - /url: /resultados
+        - generic [ref=f7e15]:
+          - 'generic "Cola: generaciones en vuelo / máximo" [ref=f7e16]':
+            - generic [ref=f7e17]: "2"
+            - generic [aria-hidden] [ref=f7e18]: /
+            - generic [ref=f7e19]: "3"
+          - link "Estilos" [ref=f7e20] [cursor=pointer]:
+            - /url: /estilos
+          - link "Capacidad" [ref=f7e21] [cursor=pointer]:
+            - /url: /capacidad
+    - main [ref=f7e22]:
+      - generic [ref=f7e23]:
+        - generic [ref=f7e24]:
+          - link "Volver a Resultados" [ref=f7e25] [cursor=pointer]:
+            - /url: /resultados
+          - generic [ref=f7e28]:
+            - generic [ref=f7e29]:
+              - heading "Tienda Mar" [level=1] [ref=f7e30]
+              - generic [ref=f7e31]: Revisión
+            - paragraph [ref=f7e32]: Agencia Sur · cccccccc-cccc-4ccc-8ccc-cccccccccccc
+        - generic [ref=f7e33]:
+          - tablist [ref=f7e34]:
+            - tab "Resumen" [ref=f7e35]
+            - tab "Entradas" [ref=f7e36]
+            - tab "Prompt" [ref=f7e37]
+            - tab "Kie" [ref=f7e38]
+            - tab "QR" [active] [selected] [ref=f7e39]
+            - tab "Resultado" [ref=f7e40]
+            - tab "JSON" [ref=f7e41]
+          - tabpanel "QR" [ref=f7e128]:
+            - generic [ref=f7e129]:
+              - heading "Intentos" [level=2] [ref=f7e130]
+              - generic [ref=f7e131]:
+                - generic [ref=f7e132]:
+                  - term [ref=f7e133]: qr_artistico_intento
+                  - definition [ref=f7e134]: —
+                - generic [ref=f7e135]:
+                  - term [ref=f7e136]: integracion_intento
+                  - definition [ref=f7e137]: —
+                - generic [ref=f7e138]:
+                  - term [ref=f7e139]: reintentos_qr
+                  - definition [ref=f7e140]: "6"
+            - button "qr_estilo_snapshot" [ref=f7e142]
+            - table [ref=f7e148]:
+              - caption [ref=f7e149]: Ajustes QR aplicados
+              - rowgroup [ref=f7e150]:
+                - row [ref=f7e151]:
+                  - columnheader "#" [ref=f7e152]
+                  - columnheader "ajuste" [ref=f7e153]
+                  - columnheader "resultado" [ref=f7e154]
+              - rowgroup [ref=f7e155]:
+                - row [ref=f7e156]:
+                  - cell "1" [ref=f7e157]
+                  - cell "Base base" [ref=f7e158]:
+                    - text: Base
+                    - generic [ref=f7e159]: base
+                  - cell "URL incorrecta" [ref=f7e160]
+                - row [ref=f7e161]:
+                  - cell "2" [ref=f7e162]
+                  - cell "Sin logo central sin_logo_central" [ref=f7e163]:
+                    - text: Sin logo central
+                    - generic [ref=f7e164]: sin_logo_central
+                  - cell "URL incorrecta" [ref=f7e165]
+                - row [ref=f7e166]:
+                  - cell "3" [ref=f7e167]
+                  - cell "Sin degradados sin_degradados" [ref=f7e168]:
+                    - text: Sin degradados
+                    - generic [ref=f7e169]: sin_degradados
+                  - cell "URL incorrecta" [ref=f7e170]
+                - row [ref=f7e171]:
+                  - cell "4" [ref=f7e172]
+                  - cell "Módulos redondeados modulos_redondeados" [ref=f7e173]:
+                    - text: Módulos redondeados
+                    - generic [ref=f7e174]: modulos_redondeados
+                  - cell "URL incorrecta" [ref=f7e175]
+                - row [ref=f7e176]:
+                  - cell "5" [ref=f7e177]
+                  - cell "Ojos normalizados ojos_normalizados" [ref=f7e178]:
+                    - text: Ojos normalizados
+                    - generic [ref=f7e179]: ojos_normalizados
+                  - cell "URL incorrecta" [ref=f7e180]
+                - row [ref=f7e181]:
+                  - cell "6" [ref=f7e182]
+                  - cell "Módulos cuadrados modulos_cuadrados" [ref=f7e183]:
+                    - text: Módulos cuadrados
+                    - generic [ref=f7e184]: modulos_cuadrados
+                  - cell "Fallo final" [ref=f7e185]
+            - generic [ref=f7e186]:
+              - generic [ref=f7e187]:
+                - heading "zona_final · puntos" [level=2] [ref=f7e188]
+                - paragraph [ref=f7e189]: "escala_usada: 0.85"
+                - table [ref=f7e192]:
+                  - rowgroup [ref=f7e193]:
+                    - row [ref=f7e194]:
+                      - columnheader "#" [ref=f7e195]
+                      - columnheader "x" [ref=f7e196]
+                      - columnheader "y" [ref=f7e197]
+                  - rowgroup [ref=f7e198]:
+                    - row [ref=f7e199]:
+                      - cell "1" [ref=f7e200]
+                      - cell "0.55" [ref=f7e201]
+                      - cell "0.58" [ref=f7e202]
+                    - row [ref=f7e203]:
+                      - cell "2" [ref=f7e204]
+                      - cell "0.9" [ref=f7e205]
+                      - cell "0.55" [ref=f7e206]
+                    - row [ref=f7e207]:
+                      - cell "3" [ref=f7e208]
+                      - cell "0.92" [ref=f7e209]
+                      - cell "0.9" [ref=f7e210]
+                    - row [ref=f7e211]:
+                      - cell "4" [ref=f7e212]
+                      - cell "0.57" [ref=f7e213]
+                      - cell "0.93" [ref=f7e214]
+              - generic [ref=f7e215]:
+                - heading "Vista zona QR" [level=2] [ref=f7e216]
+                - generic "Placeholder visual de zona QR" [ref=f7e217]
+  - alert [ref=f7e127]

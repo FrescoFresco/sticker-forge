@@ -1,49 +1,70 @@
-# Pegatinas NFC Studio (mock JSON)
+# Pegatinas NFC Studio (mock JSON + Kie opcional)
 
-App React (Next.js + TypeScript + Tailwind + shadcn/ui) que recrea **Pegatinas NFC Studio** contra un **store JSON en memoria**. Modelo objetivo: `gpt-image-2-image-to-image` (Kie). Sin Kie/Supabase reales todavía.
+App React (Next.js + TypeScript + Tailwind + shadcn/ui) para **Pegatinas NFC Studio**.
 
-Spec de UI: [`docs/SPEC-UI.md`](docs/SPEC-UI.md).
+- Por defecto: **store JSON en memoria** (mock de cola y fases).
+- Con `KIE_API_KEY`: llama a Kie **`gpt-image-2-image-to-image`** (`createTask` + `recordInfo` + callback).
+
+Spec UI: [`docs/SPEC-UI.md`](docs/SPEC-UI.md).
 
 ## Pantallas
 
 | Ruta | Función |
 |---|---|
 | `/` | Entrada — dropzone JSON/ZIP + revisión tabular |
-| `/nueva` | Composición manual de pegatina |
-| `/procesando` | Cola en vuelo / en cola (tablas) |
-| `/resultados` | Listas / revisión / error (grid o tabla) |
-| `/generacion/[id]` | Detalle completo (7 pestañas: todo el JSON de la fila) |
-| `/estilos` | Catálogo QR + editor + ops + limpiezas |
-| `/capacidad` | Reglas del sistema, fases, degradación, escalas |
+| `/nueva` | Composición manual |
+| `/procesando` | Cola en vuelo / en cola |
+| `/resultados` | Listas / revisión / error |
+| `/generacion/[id]` | Detalle completo (7 pestañas) |
+| `/estilos` | Catálogo QR |
+| `/capacidad` | Reglas + `kie_modo` real/mock |
 
 ## Arranque
 
 ```bash
 npm install
+cp .env.example .env.local   # opcional
 npm run dev
 ```
 
 Abre [http://127.0.0.1:4322](http://127.0.0.1:4322).
 
-## API mock
+## Kie real (`gpt-image-2-image-to-image`)
+
+En `.env.local`:
+
+```bash
+KIE_API_KEY=sk-...
+URL_PUBLICA=https://tu-dominio-publico   # callbacks + absolutizar proxies
+ICONO_NFC_URL=https://.../nfc.png        # URL https absoluta
+```
+
+Flujo:
+
+1. Al reclamar cola → `POST /api/v1/jobs/createTask`
+2. Vigilancia / `POST /api/aviso-kie` → `GET recordInfo?taskId=`
+3. Si `success` → guarda `resultUrls`; modo `ninguno` → `listo`; con QR → sigue fases de corrección (aún mock local)
+
+Sin `KIE_API_KEY` todo sigue en mock. Capacidad muestra `kie_modo: mock|real`.
+
+## API
 
 | Ruta | Uso |
 |---|---|
-| `GET /api/estado` | Capacidad completa + cola |
-| `GET /api/generaciones` | Listado DTO + vigilancia |
+| `GET /api/estado` | Capacidad + cola + `kie_modo` |
+| `GET /api/generaciones` | Listado + vigilancia |
 | `GET /api/generacion/:id` | Detalle completo |
 | `POST /api/generar` | Alta manual |
-| `POST /api/generaciones/:id/regenerar` | Regenerar revisión |
-| `POST /api/importar` | Importar JSON/ZIP |
+| `POST /api/generaciones/:id/regenerar` | Regenerar |
+| `POST /api/importar` | Importar |
+| `POST /api/aviso-kie` | Callback Kie (señal → reconsulta) |
 | `GET/POST /api/estilos-qr` | Catálogo |
 | `PATCH/DELETE /api/estilos-qr/:id` | Actualizar / archivar |
-| `GET/POST /api/store` | Inspeccionar / reset seed |
-
-Ejemplo: `public/ejemplos/generacion-ejemplo.json`.
+| `GET/POST /api/store` | Store / reset |
 
 ## Notas
 
-- Persistencia: memoria del proceso (se pierde al reiniciar).
-- Cola global máx. 3 en vuelo.
-- En mock, Detalle muestra internos (prompt, task_id, leases).
-- Claves reales de API nunca van a la UI.
+- Persistencia mock: memoria del proceso.
+- Cola máx. 3 en vuelo.
+- Pipeline QR (detección/proyección real) aún no; post-Kie usa fases mock.
+- Nunca exponer `KIE_API_KEY` al navegador.

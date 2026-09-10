@@ -306,6 +306,7 @@ export interface EscalaCatalogEntry {
 }
 
 export interface CapacidadesCompletas extends Capacidades {
+  kie_modo: "real" | "mock";
   limites: {
     negocio_chars: number;
     agencia_chars: number;
