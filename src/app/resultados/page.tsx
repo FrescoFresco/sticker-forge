@@ -1,18 +1,18 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { EmptyState } from "@/components/ui-helpers/empty-state";
 
-export default function EstilosPage() {
+export default function ResultadosPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Estilos QR</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Resultados</h1>
         <p className="text-sm text-muted-foreground">
-          Catálogo, editor, operaciones y limpiezas.
+          Galería e histórico de pegatinas generadas.
         </p>
       </div>
       <EmptyState
-        title="Catálogo pendiente"
-        description="Track E implementará la tabla de estilos y el panel de edición."
+        title="Sin resultados aún"
+        description="Toggle Grid | Tabla y acciones (Abrir, Exportar, Regenerar) llegarán con Track C."
       />
     </AppShell>
   );

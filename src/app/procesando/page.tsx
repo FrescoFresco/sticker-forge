@@ -1,18 +1,18 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { EmptyState } from "@/components/ui-helpers/empty-state";
 
-export default function EstilosPage() {
+export default function ProcesandoPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Estilos QR</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Procesando</h1>
         <p className="text-sm text-muted-foreground">
-          Catálogo, editor, operaciones y limpiezas.
+          Cola en vuelo y pendientes. Poll cada ~2.5s.
         </p>
       </div>
       <EmptyState
-        title="Catálogo pendiente"
-        description="Track E implementará la tabla de estilos y el panel de edición."
+        title="Tablas de cola pendientes"
+        description="Aquí irán las tablas EN VUELO y EN COLA."
       />
     </AppShell>
   );

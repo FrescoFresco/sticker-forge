@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { GeneracionDto } from "@/lib/types";
 
-interface ColaResumen {
+export interface ColaResumen {
   max_en_vuelo: number;
   en_vuelo: string[];
   pendientes: string[];
@@ -14,6 +14,13 @@ interface GeneracionesResponse {
   cola: ColaResumen;
 }
 
+const EMPTY_COLA: ColaResumen = {
+  max_en_vuelo: 3,
+  en_vuelo: [],
+  pendientes: [],
+};
+
+/** Poll generaciones + cola (~2.5s) for Procesando / Resultados / badge. */
 export function useGeneraciones(pollMs = 2500) {
   const [data, setData] = useState<GeneracionesResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +46,8 @@ export function useGeneraciones(pollMs = 2500) {
     return () => clearInterval(id);
   }, [refresh, pollMs]);
 
+  const cola = data?.cola ?? EMPTY_COLA;
+
   const procesando = useMemo(
     () =>
       (data?.generaciones ?? []).filter(
@@ -58,9 +67,18 @@ export function useGeneraciones(pollMs = 2500) {
     [data],
   );
 
+  const queueSummary = useMemo(
+    () => ({
+      en_vuelo: cola.en_vuelo.length,
+      max: cola.max_en_vuelo,
+    }),
+    [cola],
+  );
+
   return {
     generaciones: data?.generaciones ?? [],
-    cola: data?.cola ?? { max_en_vuelo: 3, en_vuelo: [], pendientes: [] },
+    cola,
+    queueSummary,
     procesando,
     listas,
     loading,
