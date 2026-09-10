@@ -43,7 +43,7 @@ export function InstruccionesIaDialog() {
             <DialogTitle>Instrucciones para IA</DialogTitle>
             <DialogDescription>
               Copia este texto, pégalo en cualquier IA y pide un ZIP completo
-              (generacion.json + logo) listo para Entrada.
+              (generacion.json + logo + estilo QR fino) listo para Entrada.
             </DialogDescription>
           </DialogHeader>
 

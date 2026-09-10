@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { mimeFromName, type EntradaAsset } from "./entrada-assets";
-import type { InputRol, QrModo } from "./types";
+import { mergeQrEstilo } from "./qr-estilo";
+import type { EstiloQrConfig, InputRol, QrModo } from "./types";
 
 export type ZipManifest = {
   negocio: string;
@@ -10,6 +11,7 @@ export type ZipManifest = {
   estilo_texto: string;
   qr_modo: QrModo;
   url_qr: string | null;
+  qr_estilo: EstiloQrConfig | null;
   version: number;
 };
 
@@ -68,6 +70,14 @@ function parseManifestJson(raw: unknown): ZipManifest {
     throw new Error('El ZIP: resolucion debe ser "1K" o "2K"');
   }
 
+  const qrEstiloRaw = gen.qr_estilo ?? gen.qrEstilo ?? null;
+  const qrEstilo =
+    qrModo === "ninguno"
+      ? null
+      : qrEstiloRaw
+        ? mergeQrEstilo(qrEstiloRaw)
+        : mergeQrEstilo({});
+
   return {
     negocio,
     agencia,
@@ -75,10 +85,11 @@ function parseManifestJson(raw: unknown): ZipManifest {
     resolucion,
     estilo_texto: String(gen.estilo_texto ?? gen.estiloTexto ?? "").slice(
       0,
-      600,
+      4000,
     ),
     qr_modo: qrModo,
     url_qr: urlQr,
+    qr_estilo: qrEstilo,
     version: Number(root.version ?? gen.version ?? 3),
   };
 }
@@ -96,9 +107,9 @@ function matchRole(path: string): InputRol | null {
 /**
  * Parsea un ZIP de pegatina completo:
  * - generacion.json (o manifest.json) obligatorio
- * - logo.(png|jpg|webp…) obligatorio para generación real con marca
- * - estilo / moodboard opcional
- * - logo_qr / nfc opcionales
+ * - logo.(png|jpg|webp…) obligatorio
+ * - estilo / moodboard / logo_qr / nfc opcionales
+ * - qr_estilo dentro del JSON opcional (estilo fino del QR)
  */
 export async function parsePegatinaZip(
   bytes: ArrayBuffer,

@@ -58,7 +58,7 @@ export interface EstiloQrConfig {
     marco: { forma: string; color: string; degradado: null };
     centro: { forma: string; color: string; degradado: null };
   };
-  fondo: { color: string };
+  fondo: { color: string; transparente?: boolean };
   margen: number;
   correccion: "L" | "M" | "Q" | "H";
   logo: { tamano: number; margen: number; ocultarModulos: boolean };
@@ -278,6 +278,8 @@ export interface GenerarPayload {
   confirmarGastoArtistico?: boolean;
   archivoOrigen?: string;
   estiloQrId?: string;
+  /** Snapshot de estilo QR (import ZIP / API). Si viene, pisa el default o el catálogo. */
+  qrEstilo?: EstiloQrConfig;
   /** Assets binarios (import ZIP). Si vienen, se guardan y se marcan inputs. */
   assets?: Partial<
     Record<

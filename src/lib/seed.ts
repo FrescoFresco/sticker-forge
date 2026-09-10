@@ -14,7 +14,7 @@ export const ESTILO_QR_DEFAULT: EstiloQrConfig = {
     marco: { forma: "cuadrado", color: "#251911", degradado: null },
     centro: { forma: "cuadrado", color: "#251911", degradado: null },
   },
-  fondo: { color: "#FFFFFF" },
+  fondo: { color: "#FFFFFF", transparente: false },
   margen: 4,
   correccion: "H",
   logo: { tamano: 0.2, margen: 0, ocultarModulos: true },

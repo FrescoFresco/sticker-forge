@@ -786,6 +786,9 @@ export function crearGeneracion(payload: GenerarPayload): GeneracionDto {
     );
     if (estilo) estiloSnapshot = structuredClone(estilo.config);
   }
+  if (payload.qrEstilo && qrModo !== "ninguno") {
+    estiloSnapshot = structuredClone(payload.qrEstilo);
+  }
 
   const id = randomUUID();
   const now = new Date().toISOString();
@@ -833,7 +836,7 @@ export function crearGeneracion(payload: GenerarPayload): GeneracionDto {
     slug_negocio: slugify(negocio) || id.slice(0, 8),
     aspect_ratio: payload.aspecto || "1:1",
     resolucion: payload.resolucion || "1K",
-    estilo_texto: (payload.estiloTexto ?? "").slice(0, 600),
+    estilo_texto: (payload.estiloTexto ?? "").slice(0, 4000),
     qr_modo: qrModo,
     url_qr: payload.urlQr?.trim() || null,
     qr_estilo_snapshot: estiloSnapshot,
@@ -1041,6 +1044,7 @@ export async function parseImportFiles(
               qrModo: manifest.qr_modo,
               confirmarGastoArtistico: manifest.qr_modo === "artistico_ia",
               archivoOrigen: file.name,
+              qrEstilo: manifest.qr_estilo ?? undefined,
               assets: {
                 ...(assets.logo ? { logo: assets.logo } : {}),
                 ...(assets.estilo ? { estilo: assets.estilo } : {}),
