@@ -150,18 +150,10 @@ export function AppShell({
             />
           ))}
         </nav>
-
-        <div className="mt-auto px-1">
-          <QueueBadge
-            en_vuelo={q.en_vuelo}
-            max={q.max}
-            className="border-white/20 bg-white/10 text-white/80 [&_span:first-child]:text-white"
-          />
-        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Móvil: marca + cola (el hub va abajo) */}
+        {/* Móvil: marca (el hub va abajo) */}
         <header className="sticky top-0 z-40 flex h-12 items-center gap-3 border-b border-border/80 bg-background/90 px-4 backdrop-blur md:hidden">
           <Link
             href="/"
@@ -172,10 +164,19 @@ export function AppShell({
             </span>
             <span className="truncate">Pegatinas NFC</span>
           </Link>
-          <QueueBadge en_vuelo={q.en_vuelo} max={q.max} />
         </header>
 
         <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 pb-24 sm:px-6 md:py-8 md:pb-8">
+          <div className="flex justify-end">
+            <Link
+              href="/procesando"
+              className="inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              title="Generaciones en cola / máximo en paralelo"
+            >
+              <span>Cola</span>
+              <QueueBadge en_vuelo={q.en_vuelo} max={q.max} />
+            </Link>
+          </div>
           {children}
         </main>
 
