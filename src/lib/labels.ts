@@ -1,4 +1,4 @@
-import type { FaseQr, GeneracionDto } from "./types";
+import type { FaseQr, GeneracionDto, QrAjusteAplicado } from "./types";
 
 export function labelEstado(estado: GeneracionDto["estado"]): string {
   switch (estado) {
@@ -43,6 +43,38 @@ export function labelQrModo(modo: GeneracionDto["qr_modo"]): string {
     case "artistico_ia":
       return "QR artístico IA";
   }
+}
+
+export function labelAjuste(ajuste: string): string {
+  const map: Record<string, string> = {
+    base: "Base",
+    sin_logo_central: "Sin logo central",
+    sin_degradados: "Sin degradados",
+    modulos_redondeados: "Módulos redondeados",
+    ojos_normalizados: "Ojos normalizados",
+    modulos_cuadrados: "Módulos cuadrados",
+  };
+  return map[ajuste] ?? ajuste;
+}
+
+export function labelAjusteResultado(resultado: string): string {
+  const map: Record<string, string> = {
+    ok: "OK",
+    ok_tras_reintento: "OK tras reintento",
+    reintento: "Reintento",
+    url_incorrecta: "URL incorrecta",
+    fallo_final: "Fallo final",
+  };
+  return map[resultado] ?? resultado;
+}
+
+export function formatAjustesResumen(
+  ajustes: QrAjusteAplicado[] | string[],
+): string {
+  if (!ajustes.length) return "—";
+  return ajustes
+    .map((a) => (typeof a === "string" ? a : `${a.ajuste}:${a.resultado}`))
+    .join(", ");
 }
 
 export function progresoFase(g: GeneracionDto): number {

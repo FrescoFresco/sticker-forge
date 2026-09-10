@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getGeneracion } from "@/lib/store";
+import { getGeneracionDetalle } from "@/lib/store";
 
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const generacion = getGeneracion(id);
+  const generacion = getGeneracionDetalle(id);
   if (!generacion) {
     return NextResponse.json({ error: "No encontrada" }, { status: 404 });
   }

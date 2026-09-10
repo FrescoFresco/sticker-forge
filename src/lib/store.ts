@@ -1,14 +1,31 @@
 import { randomUUID } from "crypto";
-import { ESTILO_QR_DEFAULT, SEED_STORE } from "./seed";
+import {
+  ESTILO_QR_DEFAULT,
+  SEED_STORE,
+  buildInputsFor,
+  emptyFencing,
+  emptyKie,
+  emptyResultados,
+} from "./seed";
 import type {
   AppStore,
   Capacidades,
+  CapacidadesCompletas,
+  DegradacionStep,
+  EscalaCatalogEntry,
+  EstiloQr,
+  EstiloQrCreatePayload,
+  EstiloQrUpdatePayload,
+  FaseCatalogEntry,
   FaseQr,
   Generacion,
+  GeneracionDetalle,
   GeneracionDto,
   GenerarPayload,
   ImportPreviewItem,
+  QrAjusteAplicado,
   QrModo,
+  QrZonaFinal,
 } from "./types";
 
 const FORMATOS = [
@@ -54,6 +71,61 @@ const FASES_ARTISTICO: FaseQr[] = [
 
 const FASES_NINGUNO: FaseQr[] = ["esperando_resultado", "validando_resultado"];
 
+const FASE_LABELS: Record<Exclude<FaseQr, null>, string> = {
+  esperando_resultado: "Esperando resultado",
+  analizando: "Analizando QR",
+  insertando: "Insertando QR",
+  validando: "Validando",
+  generando_qr_artistico: "Generando QR artístico",
+  creando_qr_artistico: "Creando QR artístico",
+  validando_qr_artistico: "Validando QR artístico",
+  integrando_diseno: "Integrando diseño",
+  validando_resultado: "Validando resultado",
+  localizando_qr_final: "Localizando QR final",
+  corrigiendo_qr_final: "Corrigiendo QR final",
+  validando_qr_final: "Validando QR final",
+};
+
+const DEGRADACION_STEPS: DegradacionStep[] = [
+  { orden: 1, ajuste: "base", descripcion: "Estilo QR sin cambios" },
+  {
+    orden: 2,
+    ajuste: "sin_logo_central",
+    descripcion: "Quita logo del centro del QR",
+  },
+  {
+    orden: 3,
+    ajuste: "sin_degradados",
+    descripcion: "Colores planos en módulos y ojos",
+  },
+  {
+    orden: 4,
+    ajuste: "modulos_redondeados",
+    descripcion: "Fuerza módulos redondeados",
+  },
+  {
+    orden: 5,
+    ajuste: "ojos_normalizados",
+    descripcion: "Ojos a forma cuadrada estándar",
+  },
+  {
+    orden: 6,
+    ajuste: "modulos_cuadrados",
+    descripcion: "Máxima legibilidad: módulos cuadrados",
+  },
+];
+
+const ESCALAS: EscalaCatalogEntry[] = [
+  { valor: 0.75, uso: "Corrección agresiva de zona" },
+  { valor: 0.85, uso: "Reintento tras fallo de lectura" },
+  { valor: 0.92, uso: "Ajuste fino habitual" },
+  { valor: 1.0, uso: "Escala nominal" },
+  { valor: 1.08, uso: "Ampliar zona si margen lo permite" },
+];
+
+const ARTISTICO_MAX_QR = 3;
+const ARTISTICO_MAX_INTEGRACION = 3;
+
 declare global {
   // eslint-disable-next-line no-var
   var __pegatinasStore: AppStore | undefined;
@@ -89,6 +161,51 @@ export function getCapacidades(): Capacidades {
   };
 }
 
+function catalogFases(): FaseCatalogEntry[] {
+  const seen = new Map<Exclude<FaseQr, null>, QrModo[]>();
+  const add = (fases: FaseQr[], modo: QrModo) => {
+    for (const f of fases) {
+      if (!f) continue;
+      const list = seen.get(f) ?? [];
+      if (!list.includes(modo)) list.push(modo);
+      seen.set(f, list);
+    }
+  };
+  add(FASES_NINGUNO, "ninguno");
+  add(FASES_INMUTABLE, "inmutable");
+  add(FASES_ARTISTICO, "artistico_ia");
+  return [...seen.entries()].map(([id, modos]) => ({
+    id,
+    modos,
+    etiqueta: FASE_LABELS[id],
+  }));
+}
+
+export function getCapacidadCompleta(): CapacidadesCompletas {
+  const base = getCapacidades();
+  return {
+    ...base,
+    limites: {
+      negocio_chars: 60,
+      agencia_chars: 60,
+      estilo_texto_chars: 600,
+      prompt_chars: 8000,
+      cola_max_en_vuelo: base.cola_max_en_vuelo,
+    },
+    fases: catalogFases(),
+    degradacion: DEGRADACION_STEPS,
+    escalas: ESCALAS,
+    artistico: {
+      max_intentos_qr: ARTISTICO_MAX_QR,
+      max_intentos_integracion: ARTISTICO_MAX_INTEGRACION,
+    },
+    futuro: {
+      prompt_sets: [],
+    },
+  };
+}
+
+/** List/gallery DTO — hides prompt, callback URL, kie.input_enviado. */
 export function toDto(g: Generacion): GeneracionDto {
   return {
     id: g.id,
@@ -96,6 +213,7 @@ export function toDto(g: Generacion): GeneracionDto {
     iniciado_en: g.iniciado_en,
     estado: g.estado,
     fase_qr: g.fase_qr,
+    intentos_inicio: g.intentos_inicio,
     error_msg: g.error_msg,
     coste_ms: g.coste_ms,
     qr_modo: g.qr_modo,
@@ -116,10 +234,23 @@ export function toDto(g: Generacion): GeneracionDto {
       ? { proxy: `/api/generacion/${g.id}/qr-artistico` }
       : null,
     qr_ajustes_aplicados: g.qr_ajustes_aplicados,
+    qr_zona_final: g.qr_zona_final,
+    familia_composicion: g.familia_composicion,
+    input_urls: g.input_urls,
+    resultados: g.resultados,
+    kie_task_id: g.kie.task_id,
+    lease_id: g.fencing.lease_id,
+    lease_hasta: g.fencing.lease_hasta,
+    reintentos_qr: g.fencing.reintentos_qr,
     origen: g.origen,
     regenerado_desde: g.regenerado_desde,
     archivo_origen: g.archivo_origen,
   };
+}
+
+/** Full generation for GET /api/generacion/:id (mock internals visible). */
+export function toDetalle(g: Generacion): GeneracionDetalle {
+  return structuredClone(g);
 }
 
 function slugify(value: string): string {
@@ -138,8 +269,68 @@ function fasesPara(modo: QrModo): FaseQr[] {
   return FASES_NINGUNO;
 }
 
+function familiaPara(g: Pick<Generacion, "tiene_logo" | "tiene_estilo" | "tiene_logo_qr" | "qr_modo">): string {
+  const parts: string[] = [];
+  if (g.tiene_logo) parts.push("logo");
+  if (g.tiene_estilo) parts.push("estilo");
+  parts.push("nfc");
+  if (g.qr_modo === "inmutable") parts.push("qr_inmutable");
+  if (g.qr_modo === "artistico_ia") parts.push("qr_artistico_ia");
+  if (g.tiene_logo_qr) parts.push("logo_qr");
+  return parts.join("+") || "basica";
+}
+
+function inputUrlsPara(g: Generacion): string[] {
+  const urls: string[] = [];
+  if (g.inputs.logo.hay && g.inputs.logo.proxy) urls.push(g.inputs.logo.proxy);
+  if (g.inputs.estilo.hay && g.inputs.estilo.proxy)
+    urls.push(g.inputs.estilo.proxy);
+  if (g.inputs.nfc.hay && g.inputs.nfc.proxy) urls.push(g.inputs.nfc.proxy);
+  if (g.inputs.logo_qr.hay && g.inputs.logo_qr.proxy)
+    urls.push(g.inputs.logo_qr.proxy);
+  if (g.inputs.qr_funcional.hay && g.inputs.qr_funcional.proxy)
+    urls.push(g.inputs.qr_funcional.proxy);
+  if (g.tiene_qr_artistico) {
+    urls.push(`/api/generacion/${g.id}/qr-artistico`);
+  }
+  return urls;
+}
+
+function mockZona(seed: string): QrZonaFinal {
+  const n = seed.charCodeAt(0) % 10;
+  const base = 0.55 + n * 0.01;
+  return {
+    cuadrilatero: [
+      { x: base, y: 0.65 },
+      { x: base + 0.28, y: 0.65 },
+      { x: base + 0.28, y: 0.93 },
+      { x: base, y: 0.93 },
+    ],
+    escala_usada: ESCALAS[2]?.valor ?? 0.92,
+  };
+}
+
 function enVuelo(store: AppStore): Generacion[] {
   return store.generaciones.filter((g) => g.estado === "generando");
+}
+
+function asignarLease(g: Generacion): void {
+  const now = Date.now();
+  g.fencing.lease_id = `lease_${g.slug_negocio}_${g.intentos_inicio}`;
+  g.fencing.lease_hasta = new Date(now + 10 * 60 * 1000).toISOString();
+  g.kie.reserva_inicio = new Date(now).toISOString();
+  g.kie.task_id = `kie_task_${g.slug_negocio}_${String(g.intentos_inicio).padStart(2, "0")}`;
+  g.kie.callBackUrl = "https://mock.local/api/kie/callback";
+  g.kie.createTime = new Date(now).toISOString();
+  g.kie.completeTime = null;
+  g.kie.costTime_segundos_backup = null;
+  g.kie.input_enviado = {
+    model: g.kie.model,
+    aspect_ratio: g.aspect_ratio,
+    resolution: g.resolucion,
+    mode: g.qr_modo,
+    input_urls: g.input_urls,
+  };
 }
 
 function reclamarCola(store: AppStore): void {
@@ -164,6 +355,18 @@ function reclamarCola(store: AppStore): void {
       g.qr_artistico_intento = 1;
       g.integracion_intento = 0;
     }
+    if (g.qr_modo !== "ninguno" && !g.inputs.qr_funcional.hay) {
+      g.inputs.qr_funcional = {
+        hay: true,
+        origen: "generado",
+        mime: "image/png",
+        proxy: `/api/entrada/${g.id}/qr-funcional`,
+        nota: "QR funcional base",
+      };
+    }
+    g.familia_composicion = familiaPara(g);
+    g.input_urls = inputUrlsPara(g);
+    asignarLease(g);
   }
 }
 
@@ -180,17 +383,46 @@ function avanzarGeneracion(g: Generacion): void {
 
   if (g.qr_modo === "artistico_ia" && g.fase_qr === "validando_qr_artistico") {
     g.tiene_qr_artistico = true;
+    g.input_urls = inputUrlsPara(g);
+  }
+
+  if (g.fase_qr === "localizando_qr_final" && !g.qr_zona_final) {
+    g.qr_zona_final = mockZona(g.id);
+  }
+
+  if (g.fase_qr === "corrigiendo_qr_final") {
+    g.fencing.reintentos_qr += 1;
+    const step = DEGRADACION_STEPS[Math.min(g.fencing.reintentos_qr - 1, DEGRADACION_STEPS.length - 1)];
+    if (step && !g.qr_ajustes_aplicados.some((a) => a.ajuste === step.ajuste)) {
+      g.qr_ajustes_aplicados.push({
+        ajuste: step.ajuste,
+        resultado: "reintento",
+      });
+    }
   }
 
   if (idx < fases.length - 1) {
     g.fase_qr = fases[idx + 1] ?? null;
     if (g.qr_modo === "artistico_ia" && g.fase_qr === "integrando_diseno") {
-      g.integracion_intento = (g.integracion_intento ?? 0) + 1;
+      g.integracion_intento = Math.min(
+        (g.integracion_intento ?? 0) + 1,
+        ARTISTICO_MAX_INTEGRACION,
+      );
+    }
+    if (
+      g.qr_modo === "artistico_ia" &&
+      g.fase_qr === "generando_qr_artistico" &&
+      (g.qr_artistico_intento ?? 0) < ARTISTICO_MAX_QR
+    ) {
+      // keep current attempt; bump only on explicit retry paths
     }
     return;
   }
 
   // Última fase: decidir resultado mock
+  const doneAt = new Date().toISOString();
+  g.kie.completeTime = doneAt;
+
   if (g.nombre_negocio.toLowerCase().includes("falla")) {
     g.estado = "error";
     g.error_msg = "Fallo técnico simulado de Kie (gpt-image-2)";
@@ -203,12 +435,28 @@ function avanzarGeneracion(g: Generacion): void {
     g.error_msg = "No se pudo garantizar la URL exacta del QR";
     g.tiene_resultado = true;
     g.coste_ms = 32000 + Math.floor(Math.random() * 8000);
-    g.qr_ajustes_aplicados = [
-      "base",
-      "sin_logo_central",
-      "sin_degradados",
-      "modulos_cuadrados",
-    ];
+    g.kie.costTime_segundos_backup = Math.round((g.coste_ms ?? 0) / 1000);
+    const ajustes: QrAjusteAplicado[] = DEGRADACION_STEPS.map((s, i) => ({
+      ajuste: s.ajuste,
+      resultado: i === DEGRADACION_STEPS.length - 1 ? "fallo_final" : "url_incorrecta",
+    }));
+    g.qr_ajustes_aplicados = ajustes;
+    g.fencing.reintentos_qr = Math.max(g.fencing.reintentos_qr, ajustes.length);
+    g.qr_zona_final = g.qr_zona_final ?? mockZona(g.id);
+    g.resultados = {
+      original: {
+        hay: true,
+        es_original: true,
+        es_final: false,
+        proxy: `/api/imagen/${g.id}?variant=original`,
+      },
+      final: {
+        hay: true,
+        es_original: false,
+        es_final: false,
+        proxy: `/api/imagen/${g.id}`,
+      },
+    };
     return;
   }
 
@@ -216,11 +464,29 @@ function avanzarGeneracion(g: Generacion): void {
   g.fase_qr = null;
   g.tiene_resultado = true;
   g.coste_ms = 28000 + Math.floor(Math.random() * 12000);
+  g.kie.costTime_segundos_backup = Math.round((g.coste_ms ?? 0) / 1000);
   if (g.qr_modo === "inmutable" || g.qr_modo === "artistico_ia") {
     g.qr_ajustes_aplicados = g.qr_ajustes_aplicados.length
-      ? g.qr_ajustes_aplicados
-      : ["base"];
+      ? g.qr_ajustes_aplicados.map((a) =>
+          a.resultado === "reintento" ? { ...a, resultado: "ok" } : a,
+        )
+      : [{ ajuste: "base", resultado: "ok" }];
+    g.qr_zona_final = g.qr_zona_final ?? mockZona(g.id);
   }
+  g.resultados = {
+    original: {
+      hay: true,
+      es_original: true,
+      es_final: false,
+      proxy: `/api/imagen/${g.id}?variant=original`,
+    },
+    final: {
+      hay: true,
+      es_original: false,
+      es_final: true,
+      proxy: `/api/imagen/${g.id}`,
+    },
+  };
 }
 
 export function vigilar(): AppStore {
@@ -252,6 +518,12 @@ export function getGeneracion(id: string): GeneracionDto | null {
   return g ? toDto(g) : null;
 }
 
+export function getGeneracionDetalle(id: string): GeneracionDetalle | null {
+  const store = vigilar();
+  const g = store.generaciones.find((item) => item.id === id);
+  return g ? toDetalle(g) : null;
+}
+
 export function crearGeneracion(payload: GenerarPayload): GeneracionDto {
   const store = getStore();
   const negocio = payload.negocio.trim().slice(0, 60);
@@ -272,8 +544,31 @@ export function crearGeneracion(payload: GenerarPayload): GeneracionDto {
     }
   }
 
+  let estiloSnapshot =
+    qrModo === "ninguno" ? null : structuredClone(ESTILO_QR_DEFAULT);
+  if (payload.estiloQrId && qrModo !== "ninguno") {
+    const estilo = store.estilos_qr.find(
+      (e) => e.id === payload.estiloQrId && !e.archivado_en,
+    );
+    if (estilo) estiloSnapshot = structuredClone(estilo.config);
+  }
+
   const id = randomUUID();
   const now = new Date().toISOString();
+  const tieneLogo = true;
+  const tieneEstilo = false;
+  const tieneLogoQr = Boolean(payload.estiloQrId);
+  const inputs = buildInputsFor(id, {
+    logo: tieneLogo,
+    estilo: tieneEstilo,
+    logo_qr: tieneLogoQr,
+    nfc: true,
+    qr_funcional: qrModo !== "ninguno",
+    logoQrOrigen: payload.estiloQrId
+      ? `catalogo:${payload.estiloQrId}`
+      : undefined,
+  });
+
   const generacion: Generacion = {
     id,
     creado_en: now,
@@ -290,21 +585,30 @@ export function crearGeneracion(payload: GenerarPayload): GeneracionDto {
     estilo_texto: (payload.estiloTexto ?? "").slice(0, 600),
     qr_modo: qrModo,
     url_qr: payload.urlQr?.trim() || null,
-    qr_estilo_snapshot: qrModo === "ninguno" ? null : ESTILO_QR_DEFAULT,
+    qr_estilo_snapshot: estiloSnapshot,
     qr_artistico_intento: null,
     integracion_intento: null,
     qr_ajustes_aplicados: [],
+    qr_zona_final: null,
     coste_ms: null,
-    tiene_logo: true,
-    tiene_estilo: false,
-    tiene_logo_qr: false,
+    tiene_logo: tieneLogo,
+    tiene_estilo: tieneEstilo,
+    tiene_logo_qr: tieneLogoQr,
     tiene_resultado: false,
     tiene_qr_artistico: false,
+    inputs,
+    kie: emptyKie(store.modelo_kie),
+    fencing: emptyFencing(),
+    familia_composicion: null,
+    input_urls: [],
+    resultados: emptyResultados(),
     origen: payload.archivoOrigen ? "importacion" : "manual",
     regenerado_desde: null,
     archivo_origen: payload.archivoOrigen ?? null,
     prompt_enviado: null,
   };
+  generacion.familia_composicion = familiaPara(generacion);
+  generacion.input_urls = inputUrlsPara(generacion);
 
   store.generaciones.unshift(generacion);
   reclamarCola(store);
@@ -339,15 +643,27 @@ export function regenerar(id: string, confirmarGasto: boolean): GeneracionDto {
     coste_ms: null,
     tiene_resultado: false,
     qr_ajustes_aplicados: [],
+    qr_zona_final: null,
     origen: "regeneracion",
     regenerado_desde: fuente.id,
-    // inmutable conserva prompt; artístico reinicia
     prompt_enviado:
       fuente.qr_modo === "inmutable" ? fuente.prompt_enviado : null,
     qr_artistico_intento: null,
     integracion_intento: null,
     tiene_qr_artistico: false,
+    kie: emptyKie(store.modelo_kie),
+    fencing: emptyFencing(),
+    resultados: emptyResultados(),
   };
+  hijo.inputs = buildInputsFor(childId, {
+    logo: hijo.tiene_logo,
+    estilo: hijo.tiene_estilo,
+    logo_qr: hijo.tiene_logo_qr,
+    nfc: true,
+    qr_funcional: hijo.qr_modo !== "ninguno",
+  });
+  hijo.familia_composicion = familiaPara(hijo);
+  hijo.input_urls = inputUrlsPara(hijo);
 
   store.generaciones.unshift(hijo);
   reclamarCola(store);
@@ -363,8 +679,10 @@ export function parseImportFiles(
 } {
   const store = getStore();
   const encolar = options.encolar !== false;
-  const items: ImportPreviewItem[] = [];
   const creadas: GeneracionDto[] = [];
+  const operacionId = randomUUID();
+  const ttlHasta = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const collected: ImportPreviewItem[] = [];
 
   for (const file of files) {
     const id = randomUUID();
@@ -391,8 +709,10 @@ export function parseImportFiles(
           ok: true,
           error: null,
           manifest_version: Number(raw.version ?? 3),
+          operacion_id: operacionId,
+          ttl_hasta: ttlHasta,
         };
-        items.push(item);
+        collected.push(item);
 
         if (encolar) {
           const creada = crearGeneracion({
@@ -409,7 +729,7 @@ export function parseImportFiles(
           creadas.push(creada);
         }
       } catch (error) {
-        items.push({
+        collected.push({
           id,
           nombre_archivo: file.name,
           negocio: "—",
@@ -421,13 +741,14 @@ export function parseImportFiles(
           ok: false,
           error: error instanceof Error ? error.message : "JSON inválido",
           manifest_version: 0,
+          operacion_id: operacionId,
+          ttl_hasta: ttlHasta,
         });
       }
       continue;
     }
 
     if (lower.endsWith(".zip")) {
-      // Mock: un ZIP válido crea una generación pendiente
       const base = file.name.replace(/\.zip$/i, "").replace(/[-_]/g, " ");
       const negocio = base.slice(0, 60) || "Import ZIP";
       const item: ImportPreviewItem = {
@@ -442,8 +763,10 @@ export function parseImportFiles(
         ok: true,
         error: null,
         manifest_version: 3,
+        operacion_id: operacionId,
+        ttl_hasta: ttlHasta,
       };
-      items.push(item);
+      collected.push(item);
       if (encolar) {
         creadas.push(
           crearGeneracion({
@@ -460,7 +783,7 @@ export function parseImportFiles(
       continue;
     }
 
-    items.push({
+    collected.push({
       id,
       nombre_archivo: file.name,
       negocio: "—",
@@ -472,11 +795,13 @@ export function parseImportFiles(
       ok: false,
       error: "Solo se admiten .json o .zip en este mock",
       manifest_version: 0,
+      operacion_id: operacionId,
+      ttl_hasta: ttlHasta,
     });
   }
 
-  store.importaciones = [...items, ...store.importaciones].slice(0, 40);
-  return { items, creadas };
+  store.importaciones = [...collected, ...store.importaciones].slice(0, 40);
+  return { items: collected, creadas };
 }
 
 export function colaResumen() {
@@ -490,5 +815,129 @@ export function colaResumen() {
       .filter((g) => g.estado === "pendiente")
       .sort((a, b) => a.creado_en.localeCompare(b.creado_en))
       .map((g) => g.id),
+    lock: enVuelo(store).map((g) => ({
+      generacion_id: g.id,
+      lease_id: g.fencing.lease_id,
+      lease_hasta: g.fencing.lease_hasta,
+      task_id: g.kie.task_id,
+    })),
+    modelo: store.modelo_kie,
   };
+}
+
+/* ── Estilos QR CRUD ─────────────────────────────────────────── */
+
+export function listEstilosQr(options: { incluirArchivados?: boolean } = {}): EstiloQr[] {
+  const store = getStore();
+  const rows = store.estilos_qr.filter(
+    (e) => options.incluirArchivados || !e.archivado_en,
+  );
+  return [...rows].sort((a, b) => b.actualizado_en.localeCompare(a.actualizado_en));
+}
+
+export function getEstiloQr(id: string): EstiloQr | null {
+  const store = getStore();
+  return store.estilos_qr.find((e) => e.id === id) ?? null;
+}
+
+export function createEstiloQr(payload: EstiloQrCreatePayload): EstiloQr {
+  const store = getStore();
+  const nombre = payload.nombre?.trim();
+  if (!nombre) throw new Error("El nombre del estilo es obligatorio");
+
+  const now = new Date().toISOString();
+  const estilo: EstiloQr = {
+    id: randomUUID(),
+    nombre: nombre.slice(0, 80),
+    config: structuredClone(payload.config ?? ESTILO_QR_DEFAULT),
+    tiene_logo: Boolean(payload.tiene_logo),
+    creado_en: now,
+    actualizado_en: now,
+    archivado_en: null,
+    version: 1,
+  };
+  store.estilos_qr.unshift(estilo);
+  store.estilos_qr_operaciones.unshift({
+    id: randomUUID(),
+    tipo: "crear",
+    estado: "ok",
+    estilo_id: estilo.id,
+    version_esperada: 1,
+    ttl_hasta: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    creado_en: now,
+    error: null,
+  });
+  return estilo;
+}
+
+export function updateEstiloQr(
+  id: string,
+  payload: EstiloQrUpdatePayload,
+): EstiloQr {
+  const store = getStore();
+  const estilo = store.estilos_qr.find((e) => e.id === id);
+  if (!estilo) throw new Error("Estilo no encontrado");
+  if (estilo.archivado_en) throw new Error("El estilo está archivado");
+
+  if (payload.nombre !== undefined) {
+    const nombre = payload.nombre.trim();
+    if (!nombre) throw new Error("El nombre del estilo es obligatorio");
+    estilo.nombre = nombre.slice(0, 80);
+  }
+  if (payload.config !== undefined) {
+    estilo.config = structuredClone(payload.config);
+  }
+  if (payload.tiene_logo !== undefined) {
+    estilo.tiene_logo = payload.tiene_logo;
+  }
+  estilo.version += 1;
+  estilo.actualizado_en = new Date().toISOString();
+
+  store.estilos_qr_operaciones.unshift({
+    id: randomUUID(),
+    tipo: "actualizar",
+    estado: "ok",
+    estilo_id: estilo.id,
+    version_esperada: estilo.version,
+    ttl_hasta: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    creado_en: estilo.actualizado_en,
+    error: null,
+  });
+  return estilo;
+}
+
+export function archiveEstiloQr(id: string): EstiloQr {
+  const store = getStore();
+  const estilo = store.estilos_qr.find((e) => e.id === id);
+  if (!estilo) throw new Error("Estilo no encontrado");
+  if (estilo.archivado_en) return estilo;
+
+  const now = new Date().toISOString();
+  estilo.archivado_en = now;
+  estilo.actualizado_en = now;
+  estilo.version += 1;
+
+  store.estilos_qr_operaciones.unshift({
+    id: randomUUID(),
+    tipo: "archivar",
+    estado: "ok",
+    estilo_id: estilo.id,
+    version_esperada: estilo.version,
+    ttl_hasta: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    creado_en: now,
+    error: null,
+  });
+  return estilo;
+}
+
+export function listEstilosOperaciones() {
+  return [...getStore().estilos_qr_operaciones].sort((a, b) =>
+    b.creado_en.localeCompare(a.creado_en),
+  );
+}
+
+export function listLimpiezas() {
+  return [...getStore().limpiezas].sort((a, b) =>
+    b.creado_en.localeCompare(a.creado_en),
+  );
 }
