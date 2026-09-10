@@ -5,7 +5,8 @@ App React (Next.js + TypeScript + Tailwind + shadcn/ui) para **Pegatinas NFC Stu
 - Por defecto: **store JSON en memoria** (mock de cola y fases).
 - Con `KIE_API_KEY`: llama a Kie **`gpt-image-2-image-to-image`** (`createTask` + `recordInfo` + callback).
 
-Spec UI: [`docs/SPEC-UI.md`](docs/SPEC-UI.md).
+Spec UI: [`docs/SPEC-UI.md`](docs/SPEC-UI.md).  
+Deploy GitHub → Cloudflare: [`docs/DEPLOY-GITHUB-CLOUDFLARE.md`](docs/DEPLOY-GITHUB-CLOUDFLARE.md).
 
 ## Pantallas
 
