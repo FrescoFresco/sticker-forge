@@ -42,8 +42,8 @@ export function InstruccionesIaDialog() {
           <DialogHeader className="gap-1 border-b border-border/80 px-4 py-4 pr-12 text-left">
             <DialogTitle>Instrucciones para IA</DialogTitle>
             <DialogDescription>
-              Copia este texto, pégalo en cualquier IA y pide un JSON compatible
-              con Entrada.
+              Copia este texto, pégalo en cualquier IA y pide un ZIP completo
+              (generacion.json + logo) listo para Entrada.
             </DialogDescription>
           </DialogHeader>
 

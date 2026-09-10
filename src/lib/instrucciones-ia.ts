@@ -1,78 +1,58 @@
 /**
  * Prompt maestro para pegar en cualquier IA.
- * El objetivo: que la IA devuelva un .json (o lote) importable en Entrada.
+ * Objetivo: que la IA prepare un ZIP completo con el que Pegatinas NFC Studio
+ * pueda generar la imagen final (logo + brief + opciones).
  */
-export const INSTRUCCIONES_IA_IMPORT = `Eres un asistente que prepara archivos de importación para **Pegatinas NFC Studio**.
+export const INSTRUCCIONES_IA_IMPORT = `Eres un asistente que prepara un paquete ZIP de importación para **Pegatinas NFC Studio**.
 
-Tu única salida útil debe ser un archivo JSON válido (o el contenido JSON listo para guardar como \`.json\`) que el software pueda importar en la pantalla **Entrada**.
-No inventes APIs externas. No generes la imagen: solo el manifiesto de datos.
-
-────────────────────────────────
-QUÉ ES EL PRODUCTO
-────────────────────────────────
-Pegatinas NFC Studio genera pegatinas (stickers) con identidad de un negocio y, opcionalmente, un QR de reseñas.
-El usuario importa un JSON (o varios) en Entrada → revisa el lote → encola hasta 3 generaciones en paralelo → un modelo de imagen (Kie) produce el arte.
+Tu salida útil DEBE ser un ZIP (o las instrucciones exactas + archivos para armarlo) con TODO lo necesario para generar la pegatina completa.
+No generes tú la imagen final: prepara el paquete que el software enviará a su motor de imagen (Kie).
 
 ────────────────────────────────
-FORMATOS DE ARCHIVO ADMITIDOS
+QUÉ QUIERE EL USUARIO
 ────────────────────────────────
-1) **JSON** (preferido y obligatorio para datos serios)
-   - Extensión: \`.json\`
-   - Encoding: UTF-8
-   - Un archivo = una pegatina (recomendado) o un objeto con campo \`generacion\`
-
-2) **ZIP**
-   - Extensión: \`.zip\`
-   - Hoy el import ZIP es limitado (usa el nombre del archivo como negocio).
-   - Si puedes elegir, **devuelve siempre JSON**, no ZIP.
+Con UN solo archivo \`.zip\` importado en la pantalla Entrada, el software debe poder:
+1) Leer los datos del negocio
+2) Usar el logo (y opcionalmente moodboard)
+3) Encolar la generación
+4) Llamar al modelo de imagen y producir la pegatina
 
 ────────────────────────────────
-ESQUEMA JSON (versión 3)
+ESTRUCTURA OBLIGATORIA DEL ZIP
 ────────────────────────────────
-Acepta cualquiera de estas dos formas:
+Nombre sugerido: \`<slug-negocio>.zip\` (ej. cafe-luna.zip)
 
-A) Envuelto:
-{
-  "version": 3,
-  "generacion": { ...campos... }
-}
+Contenido mínimo:
 
-B) Plano (los campos van en la raíz):
-{
-  "version": 3,
-  "negocio": "...",
-  "agencia": "...",
-  ...
-}
+\`\`\`
+cafe-luna.zip
+├── generacion.json      (OBLIGATORIO)
+└── logo.png             (OBLIGATORIO — también vale .jpg / .jpeg / .webp)
+\`\`\`
 
-Campos leídos por el software (aliases entre paréntesis):
+Contenido recomendado (imagen completa de marca):
 
-OBLIGATORIOS
-- negocio (nombre_negocio): string, nombre del comercio / marca. No vacío.
-- agencia (nombre_agencia): string, agencia o estudio. No vacío.
+\`\`\`
+cafe-luna.zip
+├── generacion.json
+├── logo.png             (logo del negocio, fondo transparente preferible)
+├── estilo.jpg           (moodboard / referencia visual; opcional pero muy recomendado)
+├── logo_qr.png          (logo pequeño para el centro del QR; opcional)
+└── nfc.png              (icono NFC propio; opcional — si falta, el sistema usa el global)
+\`\`\`
 
-RECOMENDADOS
-- aspecto (aspect_ratio): string. Uno de:
-  circulo, auto, 9:21, 1:3, 1:2, 9:16, 2:3, 3:4, 4:5, 1:1, 5:4, 4:3, 3:2, 16:9, 2:1, 21:9, 3:1
-  Default si falta: "1:1"
-  Nota: "circulo" se trata como 1:1 en el modelo de imagen.
-- resolucion: "1K" | "2K". Default: "1K"
-- estilo_texto (estiloTexto): string libre con dirección creativa (paleta, tipografía, mood). Puede ser "".
-- qr_modo (qrModo): "ninguno" | "inmutable" | "artistico_ia". Default: "ninguno"
-- url_qr (urlQr): string URL https de destino del QR, o null.
-  - Si qr_modo es "inmutable" o "artistico_ia", url_qr DEBE ser una URL https válida.
-  - Si qr_modo es "ninguno", url_qr puede ser null.
-- version: number (manifest). Usar 3.
-
-REGLAS DE QR
-- ninguno: sin QR en la pegatina. url_qr = null.
-- inmutable: QR funcional clásico proyectado sobre el diseño. Requiere url_qr.
-- artistico_ia: QR con tratamiento artístico (más coste). Requiere url_qr.
-  En la UI humana se confirma el gasto; en el JSON basta con poner qr_modo = "artistico_ia".
+Reglas de nombres de imagen (minúsculas, en la raíz O dentro de \`imagenes/\`):
+- logo → logo.png | logo.jpg | logo.webp
+- estilo / moodboard / style → estilo.jpg | moodboard.png | style.webp
+- logo_qr | logo-qr | logoqr → logo_qr.png
+- nfc | icono_nfc → nfc.png
 
 ────────────────────────────────
-EJEMPLO MÍNIMO VÁLIDO
+generacion.json (versión 3)
 ────────────────────────────────
+Acepta forma envuelta o plana.
+
+Envuelta:
 {
   "version": 3,
   "generacion": {
@@ -80,47 +60,60 @@ EJEMPLO MÍNIMO VÁLIDO
     "agencia": "Estudio Norte",
     "aspecto": "1:1",
     "resolucion": "1K",
-    "estilo_texto": "Paleta cálida, madera y crema, tipografía serif suave",
+    "estilo_texto": "Paleta cálida, madera y crema, tipografía serif suave, pegatina NFC de reseñas",
     "qr_modo": "inmutable",
     "url_qr": "https://example.com/resenas/cafe-luna"
   }
 }
 
-────────────────────────────────
-EJEMPLO SIN QR
-────────────────────────────────
-{
-  "version": 3,
-  "negocio": "Boutique Verde",
-  "agencia": "Casa Studio",
-  "aspecto": "4:5",
-  "resolucion": "1K",
-  "estilo_texto": "Verde oliva y crema, minimal",
-  "qr_modo": "ninguno",
-  "url_qr": null
-}
+Plana (mismos campos en la raíz).
 
-────────────────────────────────
-LOTE (VARIAS PEGATINAS)
-────────────────────────────────
-Si el usuario pide varias, genera **un archivo JSON por pegatina** con nombres claros, por ejemplo:
-- cafe-luna.json
-- bar-sol.json
-No metas un array raíz a menos que el usuario lo pida explícitamente: el importador actual procesa un objeto por archivo.
+CAMPOS
+OBLIGATORIOS
+- negocio (nombre_negocio): string no vacío
+- agencia (nombre_agencia): string no vacío
+
+RECOMENDADOS
+- aspecto (aspect_ratio): uno de
+  circulo, auto, 9:21, 1:3, 1:2, 9:16, 2:3, 3:4, 4:5, 1:1, 5:4, 4:3, 3:2, 16:9, 2:1, 21:9, 3:1
+  Default: "1:1". "circulo" → se trata como 1:1 en el modelo.
+- resolucion: "1K" | "2K". Default "1K"
+- estilo_texto (estiloTexto): brief creativo (paleta, tipografía, mood, composición). Max ~600 chars.
+- qr_modo (qrModo): "ninguno" | "inmutable" | "artistico_ia". Default "ninguno"
+- url_qr (urlQr): URL https del QR, o null
+  - Si qr_modo ≠ "ninguno" → url_qr OBLIGATORIA y debe empezar por https://
+  - Si qr_modo = "ninguno" → url_qr = null
+
+REGLAS QR
+- ninguno: sin QR funcional
+- inmutable: QR clásico legible proyectado en el diseño
+- artistico_ia: QR con tratamiento artístico (más coste)
 
 ────────────────────────────────
 CÓMO DEBE RESPONDER LA IA
 ────────────────────────────────
-1. Pregunta solo si faltan datos críticos (negocio, agencia, o URL si hay QR).
-2. Cuando tengas datos, responde con:
-   - El JSON completo en un bloque de código, listo para guardar como \`.json\`
-   - Nombre de archivo sugerido en slug (ej. cafe-luna.json)
-3. No añadas markdown dentro del JSON.
-4. No uses placeholders tipo "TU_NEGOCIO" en la versión final.
-5. No inventes URLs de reseñas: si no hay URL real y se necesita QR, pregunta o usa qr_modo "ninguno".
+1. Si faltan datos críticos (negocio, agencia, logo, o URL si hay QR), pregunta solo eso.
+2. Cuando tengas datos + imagen(es):
+   - Entrega el \`generacion.json\` completo
+   - Indica exactamente qué archivos de imagen deben ir en el ZIP y con qué nombre
+   - Si el usuario te pasó un logo, confirma que se guardará como \`logo.png\` (o la extensión real)
+   - Si puedes empaquetar/adjuntar el ZIP, hazlo; si no, da pasos claros para zippear
+3. No uses placeholders finales tipo "TU_NEGOCIO" o "https://…".
+4. No inventes URLs de reseñas: si no hay URL real y se necesita QR, pregunta o usa qr_modo "ninguno".
+5. Un ZIP = una pegatina. Si pide varias, un ZIP por negocio.
 
 ────────────────────────────────
-CONTEXTO DEL USUARIO (rellenar / sustituir)
+CHECKLIST ANTES DE ENTREGAR
+────────────────────────────────
+[ ] generacion.json válido
+[ ] logo.(png|jpg|webp) presente
+[ ] negocio y agencia rellenados
+[ ] si hay QR → url_qr https válida
+[ ] estilo_texto describe la pegatina con suficiente detalle
+[ ] nombres de archivo exactos (logo, estilo, …)
+
+────────────────────────────────
+CONTEXTO DEL USUARIO (rellenar)
 ────────────────────────────────
 Negocio:
 Agencia:
@@ -129,7 +122,9 @@ Resolución (1K/2K):
 ¿QR? (ninguno / inmutable / artistico_ia):
 URL del QR (si aplica):
 Estilo / brief creativo:
+Logo: (el usuario debe adjuntar imagen)
+Moodboard / estilo visual: (opcional)
 Notas extra:
 
-Genera ahora el JSON de importación compatible con Pegatinas NFC Studio.
+Prepara ahora el paquete ZIP completo compatible con Pegatinas NFC Studio.
 `;

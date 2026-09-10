@@ -15,6 +15,8 @@ import {
   emptyKie,
   emptyResultados,
 } from "./seed";
+import { guardarEntradaAssets } from "./entrada-assets";
+import { parsePegatinaZip } from "./zip-import";
 import type {
   AppStore,
   Capacidades,
@@ -787,19 +789,36 @@ export function crearGeneracion(payload: GenerarPayload): GeneracionDto {
 
   const id = randomUUID();
   const now = new Date().toISOString();
-  const tieneLogo = true;
-  const tieneEstilo = false;
-  const tieneLogoQr = Boolean(payload.estiloQrId);
+  const assets = payload.assets ?? {};
+  const tieneLogo = Boolean(assets.logo) || !payload.archivoOrigen;
+  // En alta manual seguimos marcando logo como esperado (flujo UI).
+  // En import ZIP solo si viene el archivo.
+  const tieneEstilo = Boolean(assets.estilo);
+  const tieneLogoQr = Boolean(assets.logo_qr) || Boolean(payload.estiloQrId);
+  const tieneNfc = Boolean(assets.nfc) || true;
   const inputs = buildInputsFor(id, {
     logo: tieneLogo,
     estilo: tieneEstilo,
     logo_qr: tieneLogoQr,
-    nfc: true,
+    nfc: tieneNfc,
     qr_funcional: qrModo !== "ninguno",
-    logoQrOrigen: payload.estiloQrId
-      ? `catalogo:${payload.estiloQrId}`
-      : undefined,
+    logoOrigen: assets.logo ? "zip" : "upload",
+    estiloOrigen: assets.estilo ? "zip" : undefined,
+    logoQrOrigen: assets.logo_qr
+      ? "zip"
+      : payload.estiloQrId
+        ? `catalogo:${payload.estiloQrId}`
+        : undefined,
   });
+
+  if (assets.logo || assets.estilo || assets.logo_qr || assets.nfc) {
+    guardarEntradaAssets(id, {
+      ...(assets.logo ? { logo: assets.logo } : {}),
+      ...(assets.estilo ? { estilo: assets.estilo } : {}),
+      ...(assets.logo_qr ? { logo_qr: assets.logo_qr } : {}),
+      ...(assets.nfc ? { nfc: assets.nfc } : {}),
+    });
+  }
 
   const generacion: Generacion = {
     id,
@@ -902,13 +921,19 @@ export function regenerar(id: string, confirmarGasto: boolean): GeneracionDto {
   return toDto(hijo);
 }
 
-export function parseImportFiles(
-  files: { name: string; text?: string }[],
+export type ImportFileInput = {
+  name: string;
+  text?: string;
+  bytes?: ArrayBuffer;
+};
+
+export async function parseImportFiles(
+  files: ImportFileInput[],
   options: { encolar?: boolean } = {},
-): {
+): Promise<{
   items: ImportPreviewItem[];
   creadas: GeneracionDto[];
-} {
+}> {
   const store = getStore();
   const encolar = options.encolar !== false;
   const creadas: GeneracionDto[] = [];
@@ -981,36 +1006,66 @@ export function parseImportFiles(
     }
 
     if (lower.endsWith(".zip")) {
-      const base = file.name.replace(/\.zip$/i, "").replace(/[-_]/g, " ");
-      const negocio = base.slice(0, 60) || "Import ZIP";
-      const item: ImportPreviewItem = {
-        id,
-        nombre_archivo: file.name,
-        negocio,
-        agencia: "Importación",
-        aspecto: "1:1",
-        resolucion: "1K",
-        qr_modo: "inmutable",
-        url_qr: "https://example.com/resenas/import",
-        ok: true,
-        error: null,
-        manifest_version: 3,
-        operacion_id: operacionId,
-        ttl_hasta: ttlHasta,
-      };
-      collected.push(item);
-      if (encolar) {
-        creadas.push(
-          crearGeneracion({
-            negocio: item.negocio,
-            agencia: item.agencia,
-            aspecto: item.aspecto,
-            resolucion: item.resolucion,
-            urlQr: item.url_qr ?? undefined,
-            qrModo: "inmutable",
-            archivoOrigen: file.name,
-          }),
-        );
+      try {
+        if (!file.bytes) {
+          throw new Error("ZIP vacío o no leído");
+        }
+        const parsed = await parsePegatinaZip(file.bytes);
+        const { manifest, assets } = parsed;
+        const item: ImportPreviewItem = {
+          id,
+          nombre_archivo: file.name,
+          negocio: manifest.negocio,
+          agencia: manifest.agencia,
+          aspecto: manifest.aspecto,
+          resolucion: manifest.resolucion,
+          qr_modo: manifest.qr_modo,
+          url_qr: manifest.url_qr,
+          ok: true,
+          error: null,
+          manifest_version: manifest.version,
+          operacion_id: operacionId,
+          ttl_hasta: ttlHasta,
+        };
+        collected.push(item);
+
+        if (encolar) {
+          creadas.push(
+            crearGeneracion({
+              negocio: manifest.negocio,
+              agencia: manifest.agencia,
+              aspecto: manifest.aspecto,
+              resolucion: manifest.resolucion,
+              estiloTexto: manifest.estilo_texto,
+              urlQr: manifest.url_qr ?? undefined,
+              qrModo: manifest.qr_modo,
+              confirmarGastoArtistico: manifest.qr_modo === "artistico_ia",
+              archivoOrigen: file.name,
+              assets: {
+                ...(assets.logo ? { logo: assets.logo } : {}),
+                ...(assets.estilo ? { estilo: assets.estilo } : {}),
+                ...(assets.logo_qr ? { logo_qr: assets.logo_qr } : {}),
+                ...(assets.nfc ? { nfc: assets.nfc } : {}),
+              },
+            }),
+          );
+        }
+      } catch (error) {
+        collected.push({
+          id,
+          nombre_archivo: file.name,
+          negocio: "—",
+          agencia: "—",
+          aspecto: "1:1",
+          resolucion: "1K",
+          qr_modo: "ninguno",
+          url_qr: null,
+          ok: false,
+          error: error instanceof Error ? error.message : "ZIP inválido",
+          manifest_version: 0,
+          operacion_id: operacionId,
+          ttl_hasta: ttlHasta,
+        });
       }
       continue;
     }
@@ -1025,7 +1080,7 @@ export function parseImportFiles(
       qr_modo: "ninguno",
       url_qr: null,
       ok: false,
-      error: "Solo se admiten .json o .zip en este mock",
+      error: "Solo se admiten .json o .zip",
       manifest_version: 0,
       operacion_id: operacionId,
       ttl_hasta: ttlHasta,

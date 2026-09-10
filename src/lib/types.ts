@@ -278,6 +278,13 @@ export interface GenerarPayload {
   confirmarGastoArtistico?: boolean;
   archivoOrigen?: string;
   estiloQrId?: string;
+  /** Assets binarios (import ZIP). Si vienen, se guardan y se marcan inputs. */
+  assets?: Partial<
+    Record<
+      "logo" | "estilo" | "logo_qr" | "nfc",
+      { bytes: Uint8Array; mime: string }
+    >
+  >;
 }
 
 export interface Capacidades {

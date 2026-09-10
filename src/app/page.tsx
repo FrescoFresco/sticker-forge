@@ -130,7 +130,8 @@ export default function EntradaPage() {
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-semibold tracking-tight">Entrada</h1>
             <p className="text-sm text-muted-foreground">
-              Suelta JSON o ZIP para preparar un lote de pegatinas.
+              Importa un ZIP completo (datos + logo) o un JSON. Usa las
+              instrucciones para IA si quieres que otra IA te prepare el paquete.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
