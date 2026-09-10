@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { FileUp, Plus } from "lucide-react";
+import { InstruccionesIaDialog } from "@/components/entrada/instrucciones-ia-dialog";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -132,13 +133,16 @@ export default function EntradaPage() {
               Suelta JSON o ZIP para preparar un lote de pegatinas.
             </p>
           </div>
-          <Link
-            href="/nueva"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            <Plus className="size-4" />
-            Nueva pegatina
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <InstruccionesIaDialog />
+            <Link
+              href="/nueva"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              <Plus className="size-4" />
+              Nueva pegatina
+            </Link>
+          </div>
         </div>
 
         <div
