@@ -118,6 +118,20 @@ export default function CapacidadPage() {
                   }
                 />
                 <KvRow
+                  k="kie_modo"
+                  v={
+                    <Badge
+                      variant={
+                        data.kie_modo === "real" ? "default" : "secondary"
+                      }
+                    >
+                      {data.kie_modo === "real"
+                        ? "real (KIE_API_KEY)"
+                        : "mock (sin clave)"}
+                    </Badge>
+                  }
+                />
+                <KvRow
                   k="cola_max_en_vuelo"
                   v={
                     <span className="font-mono">
