@@ -3,26 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, Sticker } from "lucide-react";
-import { QueueBadge, type QueueSummary } from "@/components/ui-helpers/queue-badge";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Gauge,
+  Images,
+  Inbox,
+  Loader,
+  Palette,
+  Sticker,
+} from "lucide-react";
+import {
+  QueueBadge,
+  type QueueSummary,
+} from "@/components/ui-helpers/queue-badge";
 import { cn } from "@/lib/utils";
 
-const MAIN_TABS = [
-  { href: "/", label: "Entrada", short: "Entrada" },
-  { href: "/procesando", label: "Procesando", short: "Proc." },
-  { href: "/resultados", label: "Resultados", short: "Result." },
-] as const;
-
-const SECONDARY_LINKS = [
-  { href: "/estilos", label: "Estilos" },
-  { href: "/capacidad", label: "Capacidad" },
+const HUB = [
+  { href: "/", label: "Entrada", icon: Inbox },
+  { href: "/procesando", label: "Procesando", icon: Loader },
+  { href: "/resultados", label: "Resultados", icon: Images },
+  { href: "/estilos", label: "Estilos", icon: Palette },
+  { href: "/capacidad", label: "Capacidad", icon: Gauge },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -30,9 +30,7 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function normalizeQueue(
-  queue?: QueueSummary | null,
-): QueueSummary {
+function normalizeQueue(queue?: QueueSummary | null): QueueSummary {
   return {
     en_vuelo: queue?.en_vuelo ?? 0,
     max: queue?.max ?? 3,
@@ -81,6 +79,43 @@ function useQueueFallback(queue?: QueueSummary | null) {
   return normalizeQueue(queue ?? fetched);
 }
 
+function HubLink({
+  href,
+  label,
+  icon: Icon,
+  active,
+  compact,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      title={label}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex flex-col items-center justify-center gap-0.5 rounded-xl transition-colors",
+        compact ? "size-11" : "h-12 min-w-0 flex-1 px-1",
+        active
+          ? "bg-white/15 text-white"
+          : "text-white/55 hover:bg-white/10 hover:text-white",
+      )}
+    >
+      <Icon className="size-5 shrink-0" />
+      {!compact ? (
+        <span className="max-w-full truncate text-[10px] font-medium leading-none">
+          {label}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
 export function AppShell({
   children,
   queue,
@@ -90,144 +125,75 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const q = useQueueFallback(queue);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-svh flex-col bg-neutral-50 text-foreground">
-      {/* Desktop top bar */}
-      <header className="sticky top-0 z-40 hidden border-b border-border/80 bg-background/90 backdrop-blur md:block">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4 sm:px-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-semibold tracking-tight text-foreground"
-          >
-            <span className="flex size-7 items-center justify-center rounded-md bg-foreground text-background">
-              <Sticker className="size-3.5" />
-            </span>
-            Pegatinas NFC
-          </Link>
-
-          <nav className="flex items-center gap-1">
-            {MAIN_TABS.map((tab) => {
-              const active = isActive(pathname, tab.href);
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-neutral-100 text-foreground"
-                      : "text-muted-foreground hover:bg-neutral-100/80 hover:text-foreground",
-                  )}
-                >
-                  {tab.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="ml-auto flex items-center gap-3">
-            <QueueBadge en_vuelo={q.en_vuelo} max={q.max} />
-            {SECONDARY_LINKS.map((link) => {
-              const active = isActive(pathname, link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "text-sm transition-colors",
-                    active
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile top strip: brand + queue + menu */}
-      <header className="sticky top-0 z-40 flex h-12 items-center gap-3 border-b border-border/80 bg-background/90 px-4 backdrop-blur md:hidden">
+    <div className="flex min-h-svh bg-neutral-50 text-foreground">
+      {/* Desktop / tablet: rail izquierdo */}
+      <aside className="sticky top-0 z-40 hidden h-svh w-16 shrink-0 flex-col items-center bg-neutral-950 py-3 md:flex">
         <Link
           href="/"
-          className="flex min-w-0 flex-1 items-center gap-2 font-semibold tracking-tight"
+          aria-label="Pegatinas NFC"
+          className="mb-4 flex size-10 items-center justify-center rounded-xl bg-white text-neutral-950"
         >
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-foreground text-background">
-            <Sticker className="size-3" />
-          </span>
-          <span className="truncate">Pegatinas NFC</span>
+          <Sticker className="size-4" />
         </Link>
-        <QueueBadge en_vuelo={q.en_vuelo} max={q.max} />
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-          <SheetTrigger
-            className={cn(
-              "inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-foreground",
-            )}
-            aria-label="Menú"
-          >
-            <Menu className="size-4" />
-          </SheetTrigger>
-          <SheetContent side="right" className="w-64">
-            <SheetHeader>
-              <SheetTitle>Menú</SheetTitle>
-            </SheetHeader>
-            <nav className="mt-4 flex flex-col gap-1 px-2">
-              {SECONDARY_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={cn(
-                    "rounded-md px-3 py-2 text-sm hover:bg-accent",
-                    isActive(pathname, link.href) &&
-                      "bg-accent font-medium text-foreground",
-                  )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <Link
-                href="/nueva"
-                onClick={() => setMenuOpen(false)}
-                className="rounded-md px-3 py-2 text-sm hover:bg-accent"
-              >
-                Nueva pegatina
-              </Link>
-            </nav>
-          </SheetContent>
-        </Sheet>
-      </header>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 pb-24 sm:px-6 md:py-8 md:pb-8">
-        {children}
-      </main>
+        <nav className="flex flex-1 flex-col items-center gap-1">
+          {HUB.map((item) => (
+            <HubLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(pathname, item.href)}
+              compact
+            />
+          ))}
+        </nav>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-1 px-2 py-2">
-          {MAIN_TABS.map((tab) => {
-            const active = isActive(pathname, tab.href);
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={cn(
-                  "rounded-md py-2 text-center text-xs font-medium transition-colors",
-                  active
-                    ? "bg-neutral-100 text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {tab.short}
-              </Link>
-            );
-          })}
+        <div className="mt-auto px-1">
+          <QueueBadge
+            en_vuelo={q.en_vuelo}
+            max={q.max}
+            className="border-white/20 bg-white/10 text-white/80 [&_span:first-child]:text-white"
+          />
         </div>
-      </nav>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Móvil: marca + cola (el hub va abajo) */}
+        <header className="sticky top-0 z-40 flex h-12 items-center gap-3 border-b border-border/80 bg-background/90 px-4 backdrop-blur md:hidden">
+          <Link
+            href="/"
+            className="flex min-w-0 flex-1 items-center gap-2 font-semibold tracking-tight"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-neutral-950 text-white">
+              <Sticker className="size-3" />
+            </span>
+            <span className="truncate">Pegatinas NFC</span>
+          </Link>
+          <QueueBadge en_vuelo={q.en_vuelo} max={q.max} />
+        </header>
+
+        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 pb-24 sm:px-6 md:py-8 md:pb-8">
+          {children}
+        </main>
+
+        {/* Móvil: mismo hub abajo */}
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-800 bg-neutral-950 md:hidden">
+          <div className="mx-auto flex max-w-6xl items-stretch gap-0.5 px-1 py-1.5">
+            {HUB.map((item) => (
+              <HubLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                active={isActive(pathname, item.href)}
+              />
+            ))}
+          </div>
+        </nav>
+      </div>
     </div>
   );
 }
