@@ -1,4 +1,10 @@
-import type { FaseQr, GeneracionDto, QrAjusteAplicado } from "./types";
+import type {
+  FaseQr,
+  Generacion,
+  GeneracionDto,
+  InputRol,
+  QrAjusteAplicado,
+} from "./types";
 
 export function labelEstado(estado: GeneracionDto["estado"]): string {
   switch (estado) {
@@ -125,4 +131,44 @@ export function formatFecha(iso: string | null): string {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(iso));
+}
+
+export function labelOrigen(origen: Generacion["origen"]): string {
+  switch (origen) {
+    case "manual":
+      return "Manual";
+    case "importacion":
+      return "Importación";
+    case "regeneracion":
+      return "Regeneración";
+  }
+}
+
+export function labelInputRol(rol: InputRol): string {
+  const map: Record<InputRol, string> = {
+    logo: "Logo",
+    estilo: "Estilo / moodboard",
+    logo_qr: "Logo QR",
+    nfc: "NFC",
+    qr_funcional: "QR funcional",
+  };
+  return map[rol];
+}
+
+export const INPUT_ROLES: InputRol[] = [
+  "logo",
+  "estilo",
+  "logo_qr",
+  "nfc",
+  "qr_funcional",
+];
+
+/** Dónde volver desde el detalle según el estado de la generación. */
+export function backHrefForEstado(
+  estado: GeneracionDto["estado"],
+): { href: string; label: string } {
+  if (estado === "pendiente" || estado === "generando") {
+    return { href: "/procesando", label: "Volver a Procesando" };
+  }
+  return { href: "/resultados", label: "Volver a Resultados" };
 }
