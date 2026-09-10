@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DataTable,
   TableBody,
@@ -41,6 +40,7 @@ import {
   labelQrModo,
 } from "@/lib/labels";
 import type { GeneracionDetalle } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 function ArtifactChips({ g }: { g: GeneracionDetalle }) {
   const chips: { on: boolean; label: string }[] = [
@@ -100,6 +100,7 @@ export default function GeneracionDetallePage() {
   const [confirmarGasto, setConfirmarGasto] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
+  const [tab, setTab] = useState<(typeof TABS)[number][0]>("resumen");
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -234,19 +235,33 @@ export default function GeneracionDetallePage() {
             }
           />
         ) : (
-          <Tabs defaultValue="resumen" className="w-full gap-4">
-            <TabsList
-              variant="line"
-              className="h-auto w-full flex-wrap justify-start gap-0 overflow-x-auto"
+          <div className="flex w-full flex-col gap-4">
+            <div
+              role="tablist"
+              aria-label="Secciones de la generación"
+              className="flex flex-wrap gap-1 border-b border-border/80 pb-1"
             >
               {TABS.map(([value, label]) => (
-                <TabsTrigger key={value} value={value} className="px-3 py-1.5">
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === value}
+                  onClick={() => setTab(value)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    tab === value
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
                   {label}
-                </TabsTrigger>
+                </button>
               ))}
-            </TabsList>
+            </div>
 
-            <TabsContent value="resumen" className="flex flex-col gap-4">
+            {tab === "resumen" ? (
+            <div className="flex flex-col gap-4">
               <section className="rounded-lg border border-border/80 bg-background p-4">
                 <h2 className="mb-2 text-sm font-medium">Identidad</h2>
                 <dl>
@@ -331,9 +346,11 @@ export default function GeneracionDetallePage() {
                 <h2 className="mb-3 text-sm font-medium">Artefactos</h2>
                 <ArtifactChips g={generacion} />
               </section>
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="entradas" className="flex flex-col gap-4">
+            {tab === "entradas" ? (
+            <div className="flex flex-col gap-4">
               <DataTable caption="Entradas por rol">
                 <TableHeader>
                   <TableRow>
@@ -370,9 +387,11 @@ export default function GeneracionDetallePage() {
                   })}
                 </TableBody>
               </DataTable>
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="prompt" className="flex flex-col gap-4">
+            {tab === "prompt" ? (
+            <div className="flex flex-col gap-4">
               <section className="rounded-lg border border-border/80 bg-background p-4">
                 <h2 className="mb-2 text-sm font-medium">
                   familia_composicion
@@ -400,9 +419,11 @@ export default function GeneracionDetallePage() {
                 data={generacion.prompt_enviado ?? "(vacío)"}
                 defaultOpen
               />
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="kie" className="flex flex-col gap-4">
+            {tab === "kie" ? (
+            <div className="flex flex-col gap-4">
               <DataTable caption="Estado Kie">
                 <TableHeader>
                   <TableRow>
@@ -439,9 +460,11 @@ export default function GeneracionDetallePage() {
                 data={generacion.kie.input_enviado ?? null}
                 defaultOpen
               />
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="qr" className="flex flex-col gap-4">
+            {tab === "qr" ? (
+            <div className="flex flex-col gap-4">
               <section className="rounded-lg border border-border/80 bg-background p-4">
                 <h2 className="mb-2 text-sm font-medium">Intentos</h2>
                 <dl>
@@ -586,9 +609,11 @@ export default function GeneracionDetallePage() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="resultado" className="flex flex-col gap-4">
+            {tab === "resultado" ? (
+            <div className="flex flex-col gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 {(
                   [
@@ -666,16 +691,19 @@ export default function GeneracionDetallePage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="json" className="flex flex-col gap-4">
+            {tab === "json" ? (
+            <div className="flex flex-col gap-4">
               <JsonBlock
                 title="Generación completa"
                 data={generacion}
                 defaultOpen
               />
-            </TabsContent>
-          </Tabs>
+            </div>
+            ) : null}
+          </div>
         )}
       </div>
     </AppShell>
