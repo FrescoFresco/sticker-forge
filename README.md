@@ -1,23 +1,26 @@
 # Pegatinas NFC Studio (mock JSON)
 
-App React (Next.js + TypeScript + Tailwind + shadcn/ui) que recrea el flujo de **Pegatinas NFC Studio** contra un **store JSON en memoria**. No llama a Kie ni a Supabase todavía; el modelo objetivo sigue siendo `gpt-image-2-image-to-image` dentro de Kie.
+App React (Next.js + TypeScript + Tailwind + shadcn/ui) que recrea **Pegatinas NFC Studio** contra un **store JSON en memoria**. Modelo objetivo: `gpt-image-2-image-to-image` (Kie). Sin Kie/Supabase reales todavía.
 
-## Qué incluye
+Spec de UI: [`docs/SPEC-UI.md`](docs/SPEC-UI.md).
 
-- UI adaptable (sidebar en desktop, sheet en móvil)
-- Pestañas **Crear / Procesando / Listas**
-- Dropzone para `.json` / `.zip`
-- Alta manual de generaciones
-- Cola mock (máx. 3 en vuelo) con fases QR
-- Regeneración desde `revision_necesaria`
-- Catálogo de estilos QR (lectura)
-- Panel **Sistema** para inspeccionar/resetear el store
+## Pantallas
+
+| Ruta | Función |
+|---|---|
+| `/` | Entrada — dropzone JSON/ZIP + revisión tabular |
+| `/nueva` | Composición manual de pegatina |
+| `/procesando` | Cola en vuelo / en cola (tablas) |
+| `/resultados` | Listas / revisión / error (grid o tabla) |
+| `/generacion/[id]` | Detalle completo (7 pestañas: todo el JSON de la fila) |
+| `/estilos` | Catálogo QR + editor + ops + limpiezas |
+| `/capacidad` | Reglas del sistema, fases, degradación, escalas |
 
 ## Arranque
 
 ```bash
 npm install
-npm run dev -- --port 4322 --hostname 127.0.0.1
+npm run dev
 ```
 
 Abre [http://127.0.0.1:4322](http://127.0.0.1:4322).
@@ -26,18 +29,21 @@ Abre [http://127.0.0.1:4322](http://127.0.0.1:4322).
 
 | Ruta | Uso |
 |---|---|
-| `GET /api/estado` | Capacidades + cola |
-| `GET /api/generaciones` | Listado + vigilancia |
-| `GET /api/generacion/:id` | Detalle DTO |
-| `POST /api/generar` | Crear generación |
+| `GET /api/estado` | Capacidad completa + cola |
+| `GET /api/generaciones` | Listado DTO + vigilancia |
+| `GET /api/generacion/:id` | Detalle completo |
+| `POST /api/generar` | Alta manual |
 | `POST /api/generaciones/:id/regenerar` | Regenerar revisión |
 | `POST /api/importar` | Importar JSON/ZIP |
-| `GET/POST /api/store` | Ver / resetear store |
+| `GET/POST /api/estilos-qr` | Catálogo |
+| `PATCH/DELETE /api/estilos-qr/:id` | Actualizar / archivar |
+| `GET/POST /api/store` | Inspeccionar / reset seed |
 
-Ejemplo de importación: `public/ejemplos/generacion-ejemplo.json`.
+Ejemplo: `public/ejemplos/generacion-ejemplo.json`.
 
 ## Notas
 
-- Persistencia actual: memoria del proceso Node (se pierde al reiniciar el server).
-- El DTO público no expone `prompt_enviado` ni task IDs.
-- Cuando se conecte lo real, se sustituyen los adapters del store; la UI y los contratos pueden quedarse.
+- Persistencia: memoria del proceso (se pierde al reiniciar).
+- Cola global máx. 3 en vuelo.
+- En mock, Detalle muestra internos (prompt, task_id, leases).
+- Claves reales de API nunca van a la UI.
