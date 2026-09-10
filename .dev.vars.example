@@ -1,0 +1,7 @@
+# Copia a .dev.vars para preview/deploy local con Wrangler
+# Nunca commits con secretos reales.
+
+NEXTJS_ENV=production
+KIE_API_KEY=
+URL_PUBLICA=https://sticker-forge.TU_SUBDOMINIO.workers.dev
+ICONO_NFC_URL=https://sticker-forge.TU_SUBDOMINIO.workers.dev/nfc.png

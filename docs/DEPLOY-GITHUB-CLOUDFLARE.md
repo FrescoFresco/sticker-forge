@@ -1,46 +1,73 @@
-# Deploy: GitHub → Cloudflare Pages
+# Deploy: GitHub (sticker-forge) → Cloudflare Workers
 
-## 1. Crear el repositorio GitHub
+La app Next.js usa **OpenNext** (`@opennextjs/cloudflare`).
+GitHub guarda el código; Cloudflare **ejecuta** la app.
 
-Este proyecto empezó sin repo GitHub vinculado.
-En Cursor, usa **Create repo** para crear/conectar el repositorio real en GitHub.
-A partir de ahí trabajamos sobre ese remoto.
+```
+push a main (GitHub)
+        │
+        ▼
+Cloudflare Workers Builds
+        │
+        ▼
+Worker: sticker-forge
+URL pública → Kie callbacks + ICONO_NFC_URL
+```
 
-## 2. Icono NFC
+## 1. Repo
 
-1. Pon el PNG en `public/nfc.png`
-2. Commit y push a `main`
-3. Tras el deploy, la URL será:
+- Codebase: https://cursor.com/codebase/francescofabbri/sticker-forge
+- Icono NFC: coloca `public/nfc.png` y haz push.
+
+## 2. Conectar en Cloudflare (dashboard)
+
+1. Entra en [Cloudflare Dashboard](https://dash.cloudflare.com) → **Workers & Pages**
+2. **Create** → **Workers** → **Import a repository** / conecta GitHub (o Origin según tu cuenta)
+3. Elige el repo **sticker-forge**
+4. Build settings:
+
+| Campo | Valor |
+|---|---|
+| Build command | `npx opennextjs-cloudflare build` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+
+Si el asistente de Cloudflare detecta Next + OpenNext, acepta el preset.
+
+5. **Variables y secretos** (Production + Build):
 
 ```bash
-ICONO_NFC_URL=https://<tu-proyecto>.pages.dev/nfc.png
+KIE_API_KEY=***          # secreto
+URL_PUBLICA=https://sticker-forge.<tu-subdominio>.workers.dev
+ICONO_NFC_URL=https://sticker-forge.<tu-subdominio>.workers.dev/nfc.png
 ```
 
-## 3. Cloudflare Pages
+> Ajusta `URL_PUBLICA` / `ICONO_NFC_URL` a la URL real que te dé Cloudflare tras el primer deploy.
 
-1. Cloudflare Dashboard → Workers & Pages → Create → Pages
-2. Conectar el repo de GitHub
-3. Build settings (Next.js):
-   - Framework preset: Next.js
-   - Build command: `npx @cloudflare/next-on-pages` **o** el preset oficial Next de Pages
-   - Output: según el adapter que elijamos en el siguiente paso
-4. Variables de entorno (Production):
+6. Deploy / Save → espera el build verde.
+
+## 3. Alternativa local (CLI)
+
+Si prefieres desplegar desde tu máquina (con Wrangler logueado):
 
 ```bash
-KIE_API_KEY=...
-URL_PUBLICA=https://<tu-proyecto>.pages.dev
-ICONO_NFC_URL=https://<tu-proyecto>.pages.dev/nfc.png
+origin repo clone francescofabbri/sticker-forge
+cd sticker-forge
+cp .env.example .dev.vars   # o crea .dev.vars
+# edita .dev.vars con KIE_API_KEY, URL_PUBLICA, ICONO_NFC_URL
+npm install
+npm run deploy
 ```
 
-> Nota: el adapter exacto de Next en Cloudflare lo dejamos listo en el siguiente paso
-> (OpenNext / @cloudflare/next-on-pages). Primero: repo GitHub + icono en `public/`.
+## 4. Comprobar
 
-## 4. Orden de trabajo recomendado
+- Abre la URL del Worker
+- Capacidad → debe mostrar `kie_modo: real` si hay `KIE_API_KEY`
+- `https://TU_URL/nfc.png` debe servir el icono
 
-```
-Create repo (GitHub)
-    → subir public/nfc.png
-    → configurar Cloudflare Pages
-    → env Kie + URL_PUBLICA + ICONO_NFC_URL
-    → prueba de generación real
-```
+## Archivos de este repo
+
+- `wrangler.jsonc` — Worker `sticker-forge`
+- `open-next.config.ts` — adapter OpenNext
+- `public/_headers` — cache de estáticos
+- scripts: `preview`, `deploy`, `upload`

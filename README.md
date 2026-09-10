@@ -1,12 +1,13 @@
-# Pegatinas NFC Studio (mock JSON + Kie opcional)
+# Pegatinas NFC Studio / sticker-forge
 
-App React (Next.js + TypeScript + Tailwind + shadcn/ui) para **Pegatinas NFC Studio**.
+App React (Next.js) para pegatinas NFC. Repo: **sticker-forge**.
 
-- Por defecto: **store JSON en memoria** (mock de cola y fases).
-- Con `KIE_API_KEY`: llama a Kie **`gpt-image-2-image-to-image`** (`createTask` + `recordInfo` + callback).
+- Local / mock: store JSON en memoria
+- Con `KIE_API_KEY`: Kie `gpt-image-2-image-to-image`
+- Deploy: **GitHub → Cloudflare Workers** (OpenNext)
 
 Spec UI: [`docs/SPEC-UI.md`](docs/SPEC-UI.md).  
-Deploy GitHub → Cloudflare: [`docs/DEPLOY-GITHUB-CLOUDFLARE.md`](docs/DEPLOY-GITHUB-CLOUDFLARE.md).
+Deploy: [`docs/DEPLOY-GITHUB-CLOUDFLARE.md`](docs/DEPLOY-GITHUB-CLOUDFLARE.md).
 
 ## Pantallas
 
